@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relationships · Family Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf8f4; --card: #fffdf8; --border: #e0d8cc;
+    --accent: #7b4f2e; --accent2: #b07d4e; --text: #2c1e0f;
+    --muted: #8a7060; --female: #8b3a62; --male: #2a5a8b;
+    --line: #c8b89a; --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Jost', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; min-height: 100vh; }
+
+  nav {
+    background: #1a120a; display: flex; align-items: center;
+    padding: 0 24px; height: 52px; position: sticky; top: 0; z-index: 100;
+  }
+  nav .site-title { font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; color: #e8dfd0; margin-right: 32px; white-space: nowrap; }
+  nav a { color: #b0a090; text-decoration: none; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 16px 14px; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s; }
+  nav a:hover { color: #e8dfd0; }
+  nav a.active { color: #e8c88a; border-color: #e8c88a; }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 36px 24px 60px; }
+
+  h1 { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 600; margin-bottom: 28px; color: var(--text); }
+
+  /* Input form */
+  .inputs-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+  .input-group { flex: 1; min-width: 200px; }
+  .input-group label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+  .ac-wrap { position: relative; }
+  .ac-wrap input {
+    width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+    border-radius: var(--radius); font-size: 14px; font-family: 'Jost', sans-serif;
+    background: var(--card); color: var(--text); transition: border-color 0.2s;
+  }
+  .ac-wrap input:focus { outline: none; border-color: var(--accent); }
+  .ac-wrap input.selected { border-color: var(--accent2); background: #fff8f0; }
+  .ac-list {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius);
+    max-height: 220px; overflow-y: auto; z-index: 200;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1); display: none;
+  }
+  .ac-list div { padding: 9px 14px; cursor: pointer; font-size: 14px; border-bottom: 1px solid var(--border); }
+  .ac-list div:last-child { border-bottom: none; }
+  .ac-list div:hover { background: #f5ede4; }
+  .ac-list .ac-year { font-size: 11px; color: var(--muted); margin-left: 6px; }
+
+  .find-btn {
+    padding: 11px 28px; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius); cursor: pointer; font-size: 14px; font-weight: 600;
+    font-family: 'Jost', sans-serif; white-space: nowrap; transition: background 0.2s;
+    height: 44px;
+  }
+  .find-btn:hover { background: var(--accent2); }
+  .find-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .selected-hint { font-size: 12px; color: var(--accent2); margin-top: 5px; min-height: 16px; }
+
+  /* Result area */
+  #result-area { margin-top: 36px; }
+
+  .result-summary {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius);
+    padding: 20px 24px; margin-bottom: 24px;
+  }
+  .result-label { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
+  .result-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .path-text { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.8; }
+  .path-text .path-name { color: var(--text); font-weight: 500; }
+  .path-text .path-arrow { color: var(--line); margin: 0 5px; }
+
+  /* Graphical path */
+  .graph-section { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px 24px; }
+  .graph-section h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 20px; }
+
+  .path-graph { display: flex; flex-direction: column; align-items: center; gap: 0; }
+
+  .path-node {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 10px 16px;
+    width: 280px; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s;
+    text-decoration: none; color: inherit;
+  }
+  .path-node:hover { border-color: var(--accent2); box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .path-node.endpoint { border-color: var(--accent); background: #fff8ef; border-width: 2px; }
+  .path-node.pivot { border-color: var(--accent2); background: #fff4e8; }
+  .path-node .node-name { font-family: 'Cormorant Garamond', serif; font-size: 1rem; font-weight: 600; line-height: 1.2; }
+  .path-node .node-name.F { color: var(--female); }
+  .path-node .node-name.M { color: var(--male); }
+  .path-node .node-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .path-node .node-avatar { font-size: 20px; flex-shrink: 0; }
+
+  .path-connector {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+    height: 40px; position: relative;
+  }
+  .path-connector .conn-line { width: 2px; flex: 1; background: var(--line); }
+  .path-connector .conn-label {
+    position: absolute; left: calc(50% + 8px); top: 50%; transform: translateY(-50%);
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--accent2); white-space: nowrap; background: var(--card);
+    padding: 1px 6px; border-radius: 10px; border: 1px solid var(--border);
+  }
+  .path-connector.up .conn-line { background: linear-gradient(to top, var(--line), var(--accent2)); }
+  .path-connector.down .conn-line { background: linear-gradient(to bottom, var(--accent2), var(--line)); }
+
+  .pivot-label {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--accent); margin: 2px 0; text-align: center;
+  }
+
+  /* View toggle */
+  .view-toggle {
+    display: flex; gap: 0; margin-bottom: 20px;
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; width: fit-content;
+  }
+  .view-btn {
+    padding: 7px 20px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    background: var(--bg); border: none; cursor: pointer;
+    color: var(--muted); font-family: 'Jost', sans-serif;
+    transition: background 0.15s, color 0.15s;
+  }
+  .view-btn + .view-btn { border-left: 1.5px solid var(--border); }
+  .view-btn.active { background: var(--accent); color: #fff; }
+  .view-btn:not(.active):hover { background: var(--card); color: var(--accent); }
+
+  /* Tree SVG container */
+  .tree-svg-wrap { overflow-x: auto; display: flex; justify-content: center; padding: 4px 0; }
+  .tree-svg-wrap svg { max-width: 100%; }
+</style>
+</head>
+<body>
+<nav>
+  <span class="site-title">Chemmarappallil &amp; Kalappurackal</span>
+  <a href="tree.html">Tree</a>
+  <a href="browse.html">Browse</a>
+  <a href="fulltree.html">Full Tree</a>
+  <a href="relationships.html" class="active">Relationships</a>
+</nav>
+
+<div class="page">
+  <h1>How are two people related?</h1>
+
+  <div class="inputs-row">
+    <div class="input-group">
+      <label>Person A</label>
+      <div class="ac-wrap">
+        <input type="text" id="a-input" placeholder="Type a name…" autocomplete="off">
+        <div class="ac-list" id="a-list"></div>
+      </div>
+      <div class="selected-hint" id="a-hint"></div>
+    </div>
+
+    <div class="input-group">
+      <label>Person B</label>
+      <div class="ac-wrap">
+        <input type="text" id="b-input" placeholder="Type a name…" autocomplete="off">
+        <div class="ac-list" id="b-list"></div>
+      </div>
+      <div class="selected-hint" id="b-hint"></div>
+    </div>
+
+    <button class="find-btn" id="find-btn" disabled>Find →</button>
+  </div>
+
+  <div id="result-area" style="display:none"></div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="js/relationships.js"></script>
+<script>
+let allPeople = [], ft = null;
+let selectedA = null, selectedB = null;
+
+async function init() {
+  allPeople = await fetch("data.json").then(r => r.json());
+  ft = new FamilyTree(allPeople);
+  setupAC("a-input", "a-list", "a-hint", id => { selectedA = id; updateBtn(); });
+  setupAC("b-input", "b-list", "b-hint", id => { selectedB = id; updateBtn(); });
+  document.getElementById("find-btn").addEventListener("click", calculate);
+
+  // Support ?a=ID&b=ID pre-fill (from Browse, or for testing)
+  const params = new URLSearchParams(location.search);
+  const preA = params.get("a"), preB = params.get("b");
+  if (preA && ft.byId[preA]) {
+    const p = ft.byId[preA];
+    document.getElementById("a-input").value = p.display_name;
+    document.getElementById("a-input").classList.add("selected");
+    document.getElementById("a-hint").textContent = p.display_name;
+    selectedA = preA;
+  }
+  if (preB && ft.byId[preB]) {
+    const p = ft.byId[preB];
+    document.getElementById("b-input").value = p.display_name;
+    document.getElementById("b-input").classList.add("selected");
+    document.getElementById("b-hint").textContent = p.display_name;
+    selectedB = preB;
+  }
+  updateBtn();
+  if (selectedA && selectedB) {
+    calculate();
+    if (params.get("view") === "tree") {
+      setTimeout(() => document.getElementById("btn-tree")?.click(), 50);
+    }
+  } else if (selectedB) document.getElementById("a-input").focus();
+}
+
+function updateBtn() {
+  document.getElementById("find-btn").disabled = !(selectedA && selectedB);
+}
+
+function extractYear(d) { if (!d) return ""; const m = (d+"").match(/\b(1[0-9]{3}|20[0-9]{2})\b/); return m ? m[1] : ""; }
+
+function setupAC(inputId, listId, hintId, onSelect) {
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  const hint = document.getElementById(hintId);
+
+  input.addEventListener("input", () => {
+    hint.textContent = "";
+    input.classList.remove("selected");
+    onSelect(null);
+    const q = input.value.trim().toLowerCase();
+    if (q.length < 2) { list.style.display = "none"; return; }
+    const hits = allPeople.filter(p =>
+      p.display_name.toLowerCase().includes(q) ||
+      p.names.some(n => `${n.given} ${n.surn}`.toLowerCase().includes(q))
+    ).slice(0, 12);
+    list.innerHTML = "";
+    hits.forEach(p => {
+      const div = document.createElement("div");
+      const yr = extractYear(p.birth?.date);
+      div.innerHTML = `${p.display_name}${yr ? `<span class="ac-year">${yr}</span>` : ""}`;
+      div.addEventListener("mousedown", e => {
+        e.preventDefault();
+        input.value = p.display_name;
+        input.classList.add("selected");
+        hint.textContent = p.display_name;
+        list.style.display = "none";
+        onSelect(p.id);
+      });
+      list.appendChild(div);
+    });
+    list.style.display = hits.length ? "block" : "none";
+  });
+  input.addEventListener("blur", () => setTimeout(() => list.style.display = "none", 150));
+}
+
+function calculate() {
+  if (!selectedA || !selectedB) return;
+  if (selectedA === selectedB) {
+    showResult("Same person", [], null);
+    return;
+  }
+
+  const label = ft.describeRelationship(selectedA, selectedB);
+  const pathNames = ft.pathNames(selectedA, selectedB);
+  const rawPath = ft.findPath(selectedA, selectedB);
+
+  showResult(label, pathNames, rawPath);
+}
+
+function showResult(label, pathNames, rawPath) {
+  const area = document.getElementById("result-area");
+  area.style.display = "block";
+
+  const aName = ft.byId[selectedA]?.display_name || "?";
+  const bName = ft.byId[selectedB]?.display_name || "?";
+
+  // Build text path
+  let pathTextHtml = "";
+  if (pathNames && pathNames.length > 1) {
+    pathTextHtml = `<div class="path-text">` +
+      pathNames.map((n, i) =>
+        `<span class="path-name">${n}</span>` + (i < pathNames.length - 1 ? `<span class="path-arrow">→</span>` : "")
+      ).join("") +
+      `</div>`;
+  }
+
+  const intermediates = pathNames ? Math.max(0, pathNames.length - 2) : 0;
+  area.innerHTML = `
+    <div class="result-summary">
+      <div class="result-label">${aName} is the <em>${label}</em> of ${bName}</div>
+      <div class="result-desc">${intermediates > 0 ? `Connected through ${intermediates} intermediate ${intermediates === 1 ? "person" : "people"}.` : ""}</div>
+      ${pathTextHtml}
+    </div>
+    <div class="graph-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h3 style="margin:0">Path diagram</h3>
+        <div class="view-toggle">
+          <button class="view-btn active" id="btn-linear">Linear</button>
+          <button class="view-btn" id="btn-tree">Tree</button>
+        </div>
+      </div>
+      <div id="view-linear"><div class="path-graph" id="path-graph"></div></div>
+      <div id="view-tree" style="display:none"><div class="tree-svg-wrap" id="tree-svg-wrap"></div></div>
+    </div>
+  `;
+
+  document.getElementById("btn-linear").addEventListener("click", () => {
+    document.getElementById("btn-linear").classList.add("active");
+    document.getElementById("btn-tree").classList.remove("active");
+    document.getElementById("view-linear").style.display = "block";
+    document.getElementById("view-tree").style.display = "none";
+  });
+  document.getElementById("btn-tree").addEventListener("click", () => {
+    document.getElementById("btn-tree").classList.add("active");
+    document.getElementById("btn-linear").classList.remove("active");
+    document.getElementById("view-linear").style.display = "none";
+    document.getElementById("view-tree").style.display = "block";
+    if (!document.getElementById("tree-svg-wrap").hasChildNodes()) {
+      renderTreeView(rawPath, selectedA, selectedB);
+    }
+  });
+
+  renderPathGraph(rawPath, selectedA, selectedB);
+}
+
+function renderPathGraph(rawPath, fromId, toId) {
+  const graph = document.getElementById("path-graph");
+  if (!rawPath || rawPath.length === 0) {
+    graph.innerHTML = `<div style="color:var(--muted);font-size:13px">No path found.</div>`;
+    return;
+  }
+
+  // Build full id sequence
+  const ids = [fromId, ...rawPath.map(s => s.id)];
+  const rels = rawPath.map(s => s.rel); // "parent", "child", "spouse"
+
+  // Find pivot: last "parent" step before first "child" step
+  let pivotIdx = -1;
+  let lastParentIdx = -1;
+  for (let i = 0; i < rels.length; i++) {
+    if (rels[i] === "parent") lastParentIdx = i;
+  }
+  if (lastParentIdx >= 0 && rels.indexOf("child") > lastParentIdx) {
+    pivotIdx = lastParentIdx + 1; // index in ids[] of the common ancestor
+  }
+
+  ids.forEach((id, i) => {
+    const p = ft.byId[id];
+    const isFirst = i === 0;
+    const isLast = i === ids.length - 1;
+    const isPivot = i === pivotIdx;
+    const rel = i > 0 ? rels[i - 1] : null;
+
+    // Connector above (except for first node)
+    if (i > 0) {
+      const dir = rel === "parent" ? "up" : rel === "child" ? "down" : "";
+      const relLabel = rel === "parent" ? "parent" : rel === "child" ? "child" : "spouse";
+      const conn = document.createElement("div");
+      conn.className = `path-connector ${dir}`;
+      conn.innerHTML = `
+        <div class="conn-line"></div>
+        <div class="conn-label">${relLabel}</div>
+      `;
+      graph.appendChild(conn);
+    }
+
+    // Pivot label
+    if (isPivot) {
+      const lbl = document.createElement("div");
+      lbl.className = "pivot-label";
+      lbl.textContent = "▲ Common ancestor";
+      graph.appendChild(lbl);
+    }
+
+    // Node
+    const node = document.createElement("a");
+    node.className = "path-node" + (isFirst || isLast ? " endpoint" : isPivot ? " pivot" : "");
+    node.href = `tree.html?id=${encodeURIComponent(id)}`;
+    node.target = "_blank";
+
+    const sexEmoji = p?.sex === "F" ? "👩" : p?.sex === "M" ? "👨" : "👤";
+    const sexClass = p?.sex || "";
+    const yr = extractYear(p?.birth?.date);
+    const dyr = p?.death?.date ? extractYear(p.death.date) : (p?.death?.deceased ? "†" : "");
+    const dates = yr ? (dyr ? `${yr} – ${dyr}` : yr) : "";
+
+    node.innerHTML = `
+      <div class="node-avatar">${sexEmoji}</div>
+      <div>
+        <div class="node-name ${sexClass}">${p?.display_name || "Unknown"}</div>
+        ${dates ? `<div class="node-meta">${dates}</div>` : ""}
+      </div>
+    `;
+    graph.appendChild(node);
+  });
+}
+
+function renderTreeView(rawPath, fromId, toId) {
+  const wrap = document.getElementById("tree-svg-wrap");
+  if (!rawPath || rawPath.length === 0) {
+    wrap.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:16px">No path found.</div>`;
+    return;
+  }
+
+  const ids = [fromId, ...rawPath.map(s => s.id)];
+  const rels = rawPath.map(s => s.rel);
+
+  // Find the pivot (common ancestor) index in ids[]
+  let pivotIdx = 0;
+  let lastParentIdx = -1;
+  for (let i = 0; i < rels.length; i++) {
+    if (rels[i] === "parent") lastParentIdx = i;
+  }
+  if (lastParentIdx >= 0 && rels.indexOf("child") > lastParentIdx) {
+    pivotIdx = lastParentIdx + 1;
+  }
+
+  // Split path into: upward chain (A → ancestor) and downward chain (ancestor → B)
+  // upChain: ids[0..pivotIdx] going up
+  // downChain: ids[pivotIdx..end] going down
+  const upChain = ids.slice(0, pivotIdx + 1);   // [A, ..., ancestor]
+  const downChain = ids.slice(pivotIdx);          // [ancestor, ..., B]
+
+  // Build a tree hierarchy:
+  // ancestor at root, A-side as left branch going UP (displayed as children on left),
+  // B-side as right branch going DOWN (displayed as children on right).
+  // We invert the up-chain so the ancestor is at top and A descends from it.
+  // upChain is [A, parent, grandparent, ..., ancestor] — reverse it for the tree
+  const upBranch = [...upChain].reverse(); // [ancestor, ..., A]
+  // downChain is [ancestor, child, ..., B]
+  const downBranch = downChain;            // [ancestor, ..., B]
+
+  // Build tree nodes
+  function chainToNodes(chain, side) {
+    // Returns array where chain[0] is root, chain[n] is deepest leaf
+    return chain.map((id, i) => ({
+      id,
+      side,
+      depth: i,
+      isRoot: i === 0,
+      isLeaf: i === chain.length - 1,
+    }));
+  }
+
+  const upNodes = chainToNodes(upBranch, "left");
+  const downNodes = chainToNodes(downBranch, "right");
+  // ancestor appears in both; deduplicate
+  const allNodes = [upNodes[0], ...upNodes.slice(1), ...downNodes.slice(1)];
+
+  // Now build a D3-renderable tree structure
+  // Root = ancestor (pivotIdx)
+  // Left branch = upBranch[1..] (path going to A, displayed going down-left)
+  // Right branch = downBranch[1..] (path going to B, displayed going down-right)
+  function buildTree() {
+    const root = { id: ids[pivotIdx], children: [] };
+    // Left: ancestor → ... → A (reverse of upChain without ancestor)
+    let leftCur = root;
+    for (let i = 1; i < upBranch.length; i++) {
+      const node = { id: upBranch[i], side: "left", children: [] };
+      leftCur.children.push(node);
+      leftCur = node;
+    }
+    // Right: ancestor → ... → B
+    let rightCur = root;
+    for (let i = 1; i < downBranch.length; i++) {
+      const node = { id: downBranch[i], side: "right", children: [] };
+      rightCur.children.push(node);
+      rightCur = node;
+    }
+    // If only a straight line (no branching), just make a single child list
+    if (upBranch.length === 1 && downBranch.length > 1) {
+      // pure descent
+    }
+    return root;
+  }
+
+  const treeData = buildTree();
+  const hierarchy = d3.hierarchy(treeData);
+  const maxDepth = Math.max(upBranch.length, downBranch.length);
+
+  const NW = 180, NH = 52, HGAP = 60, VGAP = 80;
+  const svgW = Math.max(500, (NW + HGAP) * 2 + 80);
+  const svgH = (NH + VGAP) * (maxDepth + 1) + 40;
+
+  const svg = d3.create("svg")
+    .attr("width", svgW)
+    .attr("height", svgH)
+    .style("font-family", "Jost, sans-serif");
+
+  const g = svg.append("g").attr("transform", `translate(${svgW / 2}, 30)`);
+
+  // Layout: root at top center, left branch goes down-left, right goes down-right
+  // Assign x/y positions manually for clarity
+  const positions = {};
+  positions[ids[pivotIdx]] = { x: 0, y: 0 };
+
+  // Left branch positions (going down-left)
+  for (let i = 1; i < upBranch.length; i++) {
+    positions[upBranch[i]] = {
+      x: -(NW / 2 + HGAP / 2 + (upBranch.length > 2 ? (i - 1) * 10 : 0)),
+      y: i * (NH + VGAP)
+    };
+  }
+  // Right branch positions (going down-right)
+  for (let i = 1; i < downBranch.length; i++) {
+    positions[downBranch[i]] = {
+      x: (NW / 2 + HGAP / 2 + (downBranch.length > 2 ? (i - 1) * 10 : 0)),
+      y: i * (NH + VGAP)
+    };
+  }
+  // Straight line case: if one side is empty, center everything
+  if (upBranch.length === 1) {
+    for (let i = 1; i < downBranch.length; i++) {
+      positions[downBranch[i]] = { x: 0, y: i * (NH + VGAP) };
+    }
+  }
+  if (downBranch.length === 1) {
+    for (let i = 1; i < upBranch.length; i++) {
+      positions[upBranch[i]] = { x: 0, y: i * (NH + VGAP) };
+    }
+  }
+
+  // Draw links
+  function drawLink(parentId, childId) {
+    const p = positions[parentId], c = positions[childId];
+    if (!p || !c) return;
+    const midY = (p.y + c.y) / 2;
+    g.append("path")
+      .attr("d", `M${p.x},${p.y + NH} C${p.x},${midY} ${c.x},${midY} ${c.x},${c.y}`)
+      .attr("fill", "none")
+      .attr("stroke", "var(--line)")
+      .attr("stroke-width", 1.8);
+  }
+
+  for (let i = 1; i < upBranch.length; i++) drawLink(upBranch[i - 1], upBranch[i]);
+  for (let i = 1; i < downBranch.length; i++) drawLink(downBranch[i - 1], downBranch[i]);
+
+  // Draw nodes
+  function drawNode(id, isEndpoint, isPivot) {
+    const pos = positions[id];
+    if (!pos) return;
+    const p = ft.byId[id];
+    const yr = extractYear(p?.birth?.date);
+    const dyr = p?.death?.date ? extractYear(p.death.date) : (p?.death?.deceased ? "†" : "");
+    const dates = yr ? (dyr ? `${yr}–${dyr}` : yr) : "";
+    const name = p?.display_name || "Unknown";
+    const nameShort = name.length > 20 ? name.slice(0, 19) + "…" : name;
+    const sexColor = p?.sex === "F" ? "var(--female)" : p?.sex === "M" ? "var(--male)" : "var(--text)";
+
+    const ng = g.append("g")
+      .attr("transform", `translate(${pos.x - NW / 2}, ${pos.y})`)
+      .style("cursor", "pointer")
+      .on("click", () => window.open(`tree.html?id=${encodeURIComponent(id)}`, "_blank"));
+
+    ng.append("rect")
+      .attr("width", NW).attr("height", NH).attr("rx", 6)
+      .attr("fill", isPivot ? "#fff4e8" : isEndpoint ? "#fff8ef" : "var(--card)")
+      .attr("stroke", isPivot ? "var(--accent2)" : isEndpoint ? "var(--accent)" : "var(--border)")
+      .attr("stroke-width", isEndpoint || isPivot ? 2 : 1.5);
+
+    ng.append("text")
+      .attr("x", 10).attr("y", 21)
+      .attr("font-family", "Cormorant Garamond, serif")
+      .attr("font-size", 13).attr("font-weight", 600)
+      .attr("fill", sexColor)
+      .text(nameShort);
+
+    if (dates) {
+      ng.append("text")
+        .attr("x", 10).attr("y", 37)
+        .attr("font-family", "Jost, sans-serif")
+        .attr("font-size", 10).attr("fill", "var(--muted)")
+        .text(dates);
+    }
+
+    if (isPivot) {
+      ng.append("text")
+        .attr("x", NW / 2).attr("y", -6)
+        .attr("text-anchor", "middle")
+        .attr("font-family", "Jost, sans-serif")
+        .attr("font-size", 9).attr("font-weight", 600)
+        .attr("fill", "var(--accent)")
+        .attr("letter-spacing", "0.06em")
+        .text("COMMON ANCESTOR");
+    }
+  }
+
+  // Draw all nodes
+  const allIds = new Set([...upBranch, ...downBranch]);
+  allIds.forEach(id => {
+    const isEndpoint = id === fromId || id === toId;
+    const isPivot = id === ids[pivotIdx];
+    drawNode(id, isEndpoint, isPivot);
+  });
+
+  wrap.innerHTML = "";
+  wrap.appendChild(svg.node());
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browse · Family Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf8f4; --card: #fff; --border: #e0d8cc;
+    --accent: #7b4f2e; --accent2: #b07d4e; --text: #2c1e0f;
+    --muted: #8a7060; --female: #8b3a62; --male: #2a5a8b; --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Jost', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; }
+
+  nav {
+    background: #1a120a; display: flex; align-items: center;
+    padding: 0 24px; height: 52px; position: sticky; top: 0; z-index: 100;
+  }
+  nav .site-title { font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; color: #e8dfd0; margin-right: 32px; white-space: nowrap; }
+  nav a { color: #b0a090; text-decoration: none; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 16px 14px; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s; }
+  nav a:hover { color: #e8dfd0; }
+  nav a.active { color: #e8c88a; border-color: #e8c88a; }
+  nav .stats { font-size: 0.78rem; color: #7a6a5a; margin-left: auto; }
+
+  .page { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+  .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+  .search-bar input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 15px; background: var(--card); font-family: 'Jost', sans-serif; }
+  .search-bar input:focus { outline: none; border-color: var(--accent2); }
+  .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip { padding: 4px 12px; border-radius: 20px; border: 1.5px solid var(--border); cursor: pointer; font-size: 13px; color: var(--muted); background: var(--card); }
+  .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .count-label { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+
+  .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .person-card { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; }
+  .person-card:hover { border-color: var(--accent2); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .person-card .name { font-weight: 600; margin-bottom: 3px; font-family: 'Cormorant Garamond', serif; font-size: 1rem; }
+  .person-card .name.female { color: var(--female); }
+  .person-card .name.male { color: var(--male); }
+  .person-card .meta { font-size: 12px; color: var(--muted); }
+  .clan-badge { display: inline-block; margin-top: 5px; padding: 2px 8px; background: #f0e8df; border-radius: 12px; font-size: 11px; color: var(--accent); }
+
+  /* Profile overlay */
+  #profile-overlay { display: none; }
+  .profile-wrap { padding: 24px; max-width: 800px; margin: 0 auto; }
+  .back-btn { margin-bottom: 16px; cursor: pointer; color: var(--accent2); font-size: 14px; display: inline-flex; align-items: center; gap: 4px; }
+  .back-btn:hover { text-decoration: underline; }
+  .profile { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .profile-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+  .avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+  .avatar.M { background: #dce8f7; } .avatar.F { background: #f7dce8; } .avatar.U { background: #e8e8e8; }
+  .profile-name { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 600; }
+  .profile-name.female { color: var(--female); } .profile-name.male { color: var(--male); }
+  .profile-dates { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 16px 0 8px; }
+  .rel-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rel-chip { padding: 5px 12px; border-radius: var(--radius); border: 1.5px solid var(--border); cursor: pointer; font-size: 13px; background: var(--bg); }
+  .rel-chip:hover { border-color: var(--accent2); }
+  .deceased-badge { display: inline-block; padding: 1px 7px; background: #eee; border-radius: 12px; font-size: 11px; color: var(--muted); margin-left: 6px; }
+  .action-btn { padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 600; font-family: 'Jost', sans-serif; }
+  .action-btn:hover { background: var(--accent2); }
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+</style>
+</head>
+<body>
+<nav>
+  <span class="site-title">Chemmarappallil &amp; Kalappurackal</span>
+  <a href="tree.html">Tree</a>
+  <a href="browse.html" class="active">Browse</a>
+  <a href="fulltree.html">Full Tree</a>
+  <a href="relationships.html">Relationships</a>
+  <span class="stats" id="header-stats"></span>
+</nav>
+
+<div id="browse-page" class="page">
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Search by name…" autocomplete="off">
+  </div>
+  <div class="filter-chips" id="filter-chips"></div>
+  <div class="count-label" id="result-count"></div>
+  <div class="results" id="results-grid"></div>
+  <div class="empty-state" id="empty-state" style="display:none">No results found.</div>
+</div>
+
+<div id="profile-overlay">
+  <div class="profile-wrap">
+    <div class="back-btn" id="back-btn">← Back to results</div>
+    <div class="profile" id="profile-content"></div>
+  </div>
+</div>
+
+<script src="js/relationships.js"></script>
+<script>
+let allPeople = [], ft = null, activeFilter = null, lastSearch = "", profileStack = [];
+const REAL_CLANS = new Set(['Chemmarappallil','Kalappurackal','Ennasseril','Puthettu','Pariat','Kurien','Lindquist','Van']);
+
+async function init() {
+  allPeople = await fetch("data.json").then(r => r.json());
+  ft = new FamilyTree(allPeople);
+  document.getElementById("header-stats").textContent = `${allPeople.length} people`;
+  buildFilterChips();
+  renderResults(allPeople);
+  document.getElementById("search-input").addEventListener("input", e => { lastSearch = e.target.value; applyFilters(); });
+  document.getElementById("back-btn").addEventListener("click", () => {
+    profileStack.pop();
+    if (profileStack.length > 0) showProfile(profileStack[profileStack.length - 1], false);
+    else hideProfile();
+  });
+}
+
+function buildFilterChips() {
+  const clans = [...new Set(allPeople.map(p => p.clan).filter(c => c && REAL_CLANS.has(c)))].sort();
+  const container = document.getElementById("filter-chips");
+  clans.forEach(clan => {
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.textContent = clan;
+    chip.addEventListener("click", () => {
+      if (activeFilter === clan) { activeFilter = null; chip.classList.remove("active"); }
+      else { document.querySelectorAll(".chip").forEach(c => c.classList.remove("active")); activeFilter = clan; chip.classList.add("active"); }
+      applyFilters();
+    });
+    container.appendChild(chip);
+  });
+}
+
+function applyFilters() {
+  const q = lastSearch.toLowerCase().trim();
+  let filtered = allPeople;
+  if (q) filtered = filtered.filter(p => p.names.map(n => `${n.given} ${n.surn}`.toLowerCase()).join(" ").includes(q) || (p.clan||"").toLowerCase().includes(q));
+  if (activeFilter) filtered = filtered.filter(p => p.clan === activeFilter);
+  renderResults(filtered);
+}
+
+function extractYear(d) { if (!d) return ""; const m = d.match(/\b(1[0-9]{3}|20[0-9]{2})\b/); return m ? m[1] : d; }
+
+function renderResults(people) {
+  const grid = document.getElementById("results-grid");
+  const empty = document.getElementById("empty-state");
+  grid.innerHTML = "";
+  const sorted = [...people].sort((a,b) => a.display_name.localeCompare(b.display_name));
+  document.getElementById("result-count").textContent = `${sorted.length} ${sorted.length === 1 ? "person" : "people"}`;
+  if (!sorted.length) { empty.style.display = "block"; return; }
+  empty.style.display = "none";
+  sorted.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "person-card";
+    const sc = p.sex === "F" ? "female" : p.sex === "M" ? "male" : "";
+    const by = extractYear(p.birth?.date), dy = p.death?.date ? extractYear(p.death.date) : (p.death?.deceased ? "†" : "");
+    const years = by ? `${by}${dy ? " – " + dy : ""}` : "";
+    const showClan = p.clan && REAL_CLANS.has(p.clan);
+    card.innerHTML = `<div class="name ${sc}">${p.display_name||"Unknown"}</div><div class="meta">${years}</div>${showClan ? `<span class="clan-badge">${p.clan}</span>` : ""}`;
+    card.addEventListener("click", () => showProfile(p.id));
+    grid.appendChild(card);
+  });
+}
+
+function showProfile(id, push = true) {
+  const p = ft.byId[id]; if (!p) return;
+  if (push) profileStack.push(id);
+  document.getElementById("browse-page").style.display = "none";
+  document.getElementById("profile-overlay").style.display = "block";
+
+  const sc = p.sex === "F" ? "female" : p.sex === "M" ? "male" : "";
+  const sexEmoji = p.sex === "F" ? "👩" : p.sex === "M" ? "👨" : "👤";
+  const by = p.birth?.date ? `b. ${p.birth.date}` : "";
+  const dy = p.death?.date ? `d. ${p.death.date}` : (p.death?.deceased ? "Deceased" : "");
+
+  const altNames = p.names.filter(n => n._type !== "birth" && (n.given || n.surn));
+
+  document.getElementById("profile-content").innerHTML = `
+    <div class="profile-header">
+      <div class="avatar ${p.sex}">${sexEmoji}</div>
+      <div>
+        <div class="profile-name ${sc}">${p.display_name}${p.death?.deceased||p.death?.date?'<span class="deceased-badge">†</span>':""}</div>
+        ${p.clan && REAL_CLANS.has(p.clan) ? `<div style="color:var(--accent2);font-size:13px;margin-top:2px">${p.clan}</div>` : ""}
+        <div class="profile-dates">${[by,dy].filter(Boolean).join(" · ")}</div>
+      </div>
+    </div>
+    ${altNames.length ? `<div class="section-label">Also known as</div><div class="rel-list">${altNames.map(n=>`<span class="rel-chip" style="cursor:default">${[n.given,n.surn].filter(Boolean).join(" ")} <span style="color:var(--muted);font-size:11px">(${n._type})</span></span>`).join("")}</div>` : ""}
+    ${p.parents.length ? `<div class="section-label">Parents</div><div class="rel-list">${p.parents.map(r=>`<span class="rel-chip" data-id="${r.id}">${r.name}</span>`).join("")}</div>` : ""}
+    ${p.spouses.length ? `<div class="section-label">Spouse${p.spouses.length>1?"s":""}</div><div class="rel-list">${p.spouses.map(r=>`<span class="rel-chip" data-id="${r.id}">${r.name}</span>`).join("")}</div>` : ""}
+    ${p.children.length ? `<div class="section-label">Children (${p.children.length})</div><div class="rel-list">${p.children.map(r=>`<span class="rel-chip" data-id="${r.id}">${r.name}</span>`).join("")}</div>` : ""}
+    ${p.notes?.length ? `<div class="section-label">Notes</div><div style="font-size:13px;color:var(--muted);line-height:1.6">${p.notes.join("<br>")}</div>` : ""}
+    <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="action-btn" id="view-tree-btn">View in tree →</button>
+      <button class="action-btn" id="find-rel-btn" style="background:var(--accent2)">Find relationship →</button>
+    </div>
+  `;
+
+  document.querySelectorAll("#profile-content .rel-chip[data-id]").forEach(chip => {
+    chip.addEventListener("click", () => showProfile(chip.dataset.id));
+  });
+  document.getElementById("view-tree-btn").addEventListener("click", () => {
+    window.location.href = `tree.html?id=${encodeURIComponent(id)}`;
+  });
+  document.getElementById("find-rel-btn").addEventListener("click", () => {
+    window.location.href = `relationships.html?b=${encodeURIComponent(id)}`;
+  });
+}
+
+function hideProfile() {
+  profileStack = [];
+  document.getElementById("profile-overlay").style.display = "none";
+  document.getElementById("browse-page").style.display = "block";
+}
+
+init();
+</script>
+</body>
+</html>

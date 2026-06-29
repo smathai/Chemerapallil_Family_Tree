@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Tree</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #f5f0e8;
+    --ink: #1a120a;
+    --accent: #7b4f2e;
+    --muted: #9a8070;
+    --card-bg: #fffdf8;
+    --border: #ddd5c5;
+    --female: #7d3a5a;
+    --male: #2a5070;
+    --line: #c8b89a;
+    --hover: #f0e8dc;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Jost', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  nav {
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 24px;
+    height: 52px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  nav .site-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    color: #e8dfd0;
+    margin-right: 32px;
+    white-space: nowrap;
+  }
+  nav a {
+    color: #b0a090;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 16px 14px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  nav a:hover { color: #e8dfd0; }
+  nav a.active { color: #e8c88a; border-color: #e8c88a; }
+
+  .page-header {
+    padding: 32px 32px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .page-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+    flex: 1;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 0 0 280px;
+  }
+  .search-wrap input {
+    width: 100%;
+    padding: 8px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Jost', sans-serif;
+    font-size: 14px;
+    background: var(--card-bg);
+    color: var(--ink);
+  }
+  .search-wrap input:focus { outline: none; border-color: var(--accent); }
+  .autocomplete-list {
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--card-bg); border: 1.5px solid var(--border);
+    border-radius: 6px; max-height: 200px; overflow-y: auto;
+    z-index: 50; box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    display: none;
+  }
+  .autocomplete-list div {
+    padding: 8px 14px; cursor: pointer; font-size: 13px;
+  }
+  .autocomplete-list div:hover { background: var(--hover); }
+
+  /* Tree canvas */
+  .tree-container {
+    padding: 0 24px 48px;
+    overflow-x: auto;
+  }
+
+  .tree-level {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    position: relative;
+    margin-bottom: 0;
+  }
+
+  /* SVG connector lines */
+  .connectors {
+    display: block;
+    width: 100%;
+    overflow: visible;
+    position: relative;
+  }
+
+  /* Person cards */
+  .person-node {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    width: 160px;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    position: relative;
+  }
+  .person-node:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(123,79,46,0.15);
+    transform: translateY(-1px);
+  }
+  .person-node.center {
+    border-color: var(--accent);
+    border-width: 2px;
+    background: #fff8ef;
+    box-shadow: 0 4px 20px rgba(123,79,46,0.2);
+  }
+  .person-node.center::before {
+    content: '★';
+    position: absolute;
+    top: -10px; right: -10px;
+    background: var(--accent);
+    color: #fff;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 20px;
+    text-align: center;
+  }
+  .person-node .node-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .person-node .node-name.female { color: var(--female); }
+  .person-node .node-name.male { color: var(--male); }
+  .person-node .node-dates {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .person-node .node-rel {
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  /* Level labels */
+  .level-label {
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 12px 0 8px;
+    font-weight: 500;
+  }
+
+  /* SVG lines between levels */
+  svg.lines {
+    display: block;
+    pointer-events: none;
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow: visible;
+  }
+
+  .levels-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .level-row {
+    position: relative;
+  }
+
+  /* Connector SVG between rows */
+  .row-connector {
+    height: 40px;
+    position: relative;
+  }
+  .row-connector svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .spouse-separator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .spouse-join {
+    width: 28px;
+    height: 2px;
+    background: var(--line);
+    flex-shrink: 0;
+  }
+
+  .section-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 32px 24px;
+  }
+
+  .center-section {
+    padding: 0 24px;
+  }
+
+  .siblings-section {
+    padding: 0 24px 24px;
+  }
+
+  .siblings-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .siblings-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* 3-level layout */
+  .tree-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 0 24px 48px;
+    min-height: 600px;
+  }
+
+  .tree-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 10px;
+    position: relative;
+    width: 100%;
+  }
+
+  .tree-row-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    padding: 14px 0 6px;
+    font-weight: 500;
+  }
+
+  .connector-svg-row {
+    width: 100%;
+    height: 44px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .family-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .couple-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .marriage-line {
+    width: 20px;
+    height: 2px;
+    background: var(--line);
+  }
+
+  .empty-node {
+    width: 160px;
+    height: 72px;
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="site-title">Chemmarappallil &amp; Kalappurackal</span>
+  <a href="tree.html" class="active">Tree</a>
+  <a href="browse.html">Browse</a>
+  <a href="fulltree.html">Full Tree</a>
+  <a href="relationships.html">Relationships</a>
+</nav>
+
+<div class="page-header">
+  <h1>Family Tree</h1>
+  <div class="search-wrap">
+    <input type="text" id="search-input" placeholder="Search person…" autocomplete="off">
+    <div class="autocomplete-list" id="autocomplete-list"></div>
+  </div>
+</div>
+
+<div class="tree-layout" id="tree-layout">
+  <div style="text-align:center;color:var(--muted);padding:60px">Loading…</div>
+</div>
+
+<script src="js/relationships.js"></script>
+<script>
+let allPeople = [], ft = null, currentId = null;
+
+async function init() {
+  const resp = await fetch('data.json');
+  allPeople = await resp.json();
+  ft = new FamilyTree(allPeople);
+
+  // Default: oldest root
+  const roots = allPeople.filter(p => !p.parents.length);
+  roots.sort((a,b) => (a.birth?.date||'9999').localeCompare(b.birth?.date||'9999'));
+  // Pick Cherian I if present, else oldest
+  const urlId = new URLSearchParams(location.search).get('id');
+  const cherian = allPeople.find(p => p.display_name === 'Cherian I' && !p.parents.length);
+  currentId = urlId || (cherian ? cherian.id : roots[0]?.id);
+
+  setupSearch();
+  render();
+}
+
+function setupSearch() {
+  const input = document.getElementById('search-input');
+  const list = document.getElementById('autocomplete-list');
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    if (q.length < 2) { list.style.display = 'none'; return; }
+    const matches = allPeople.filter(p =>
+      p.display_name.toLowerCase().includes(q)
+    ).slice(0, 10);
+    list.innerHTML = '';
+    matches.forEach(p => {
+      const div = document.createElement('div');
+      const yr = p.birth?.date ? ' (' + extractYear(p.birth.date) + ')' : '';
+      div.textContent = p.display_name + yr;
+      div.addEventListener('mousedown', e => {
+        e.preventDefault();
+        input.value = p.display_name;
+        list.style.display = 'none';
+        currentId = p.id;
+        render();
+      });
+      list.appendChild(div);
+    });
+    list.style.display = 'block';
+  });
+  input.addEventListener('blur', () => setTimeout(() => list.style.display = 'none', 150));
+}
+
+function extractYear(d) {
+  if (!d) return '';
+  const m = d.match(/\b(1[0-9]{3}|20[0-9]{2})\b/);
+  return m ? m[1] : d;
+}
+
+function makeNode(person, relLabel, isCenter) {
+  if (!person) {
+    const el = document.createElement('div');
+    el.className = 'empty-node';
+    el.textContent = 'Unknown';
+    return el;
+  }
+  const el = document.createElement('div');
+  el.className = 'person-node' + (isCenter ? ' center' : '');
+  const sexClass = person.sex === 'F' ? 'female' : person.sex === 'M' ? 'male' : '';
+  const yr = extractYear(person.birth?.date);
+  const dyr = person.death?.date ? extractYear(person.death.date) : (person.death?.deceased ? '†' : '');
+  const dates = yr ? (dyr ? `${yr} – ${dyr}` : yr) : (dyr || '');
+  el.innerHTML = `
+    <div class="node-name ${sexClass}">${person.display_name}</div>
+    ${dates ? `<div class="node-dates">${dates}</div>` : ''}
+    ${relLabel ? `<div class="node-rel">${relLabel}</div>` : ''}
+  `;
+  el.addEventListener('click', () => { currentId = person.id; render(); });
+  return el;
+}
+
+function makeCoupleRow(p1, p2, p1label, p2label, p1center, p2center) {
+  const wrap = document.createElement('div');
+  wrap.className = 'couple-row';
+  wrap.appendChild(makeNode(p1, p1label, p1center));
+  if (p2) {
+    const line = document.createElement('div');
+    line.className = 'marriage-line';
+    wrap.appendChild(line);
+    wrap.appendChild(makeNode(p2, p2label, p2center));
+  }
+  return wrap;
+}
+
+function render() {
+  const layout = document.getElementById('tree-layout');
+  layout.innerHTML = '';
+  const p = ft.byId[currentId];
+  if (!p) return;
+
+  // ── ROW 1: Parents (as couple) ──────────────────────
+  if (p.parents.length > 0) {
+    addRowLabel(layout, 'Parents');
+    const parentRow = document.createElement('div');
+    parentRow.className = 'tree-row';
+
+    // Group parents into couples via famc family
+    const parentIds = p.parents.map(x => x.id);
+    const father = p.parents.find(x => ft.byId[x.id]?.sex === 'M');
+    const mother = p.parents.find(x => ft.byId[x.id]?.sex === 'F');
+    const otherParents = p.parents.filter(x =>
+      x.id !== father?.id && x.id !== mother?.id
+    );
+
+    if (father || mother) {
+      const couple = makeCoupleRow(
+        father ? ft.byId[father.id] : null,
+        mother ? ft.byId[mother.id] : null,
+        'Father', 'Mother', false, false
+      );
+      parentRow.appendChild(couple);
+    }
+    otherParents.forEach(px => {
+      parentRow.appendChild(makeNode(ft.byId[px.id], 'Parent', false));
+    });
+
+    layout.appendChild(parentRow);
+    addConnector(layout);
+  }
+
+  // ── ROW 2: [male's siblings] | [couple/person] | [female's siblings] ──
+  // Collect siblings of focused person
+  const pSibIds = [];
+  for (const par of p.parents) {
+    const parentPerson = ft.byId[par.id];
+    if (!parentPerson) continue;
+    for (const ch of parentPerson.children) {
+      if (ch.id !== p.id && !pSibIds.includes(ch.id)) pSibIds.push(ch.id);
+    }
+  }
+  pSibIds.sort((a, b) => {
+    const ay = extractYear(ft.byId[a]?.birth?.date) || '9999';
+    const by = extractYear(ft.byId[b]?.birth?.date) || '9999';
+    return ay.localeCompare(by);
+  });
+
+  // Collect siblings of spouse
+  const sp = p.spouses.length > 0 ? ft.byId[p.spouses[0].id] : null;
+  const spSibIds = [];
+  if (sp) {
+    for (const par of sp.parents) {
+      const parentPerson = ft.byId[par.id];
+      if (!parentPerson) continue;
+      for (const ch of parentPerson.children) {
+        if (ch.id !== sp.id && !spSibIds.includes(ch.id)) spSibIds.push(ch.id);
+      }
+    }
+    spSibIds.sort((a, b) => {
+      const ay = extractYear(ft.byId[a]?.birth?.date) || '9999';
+      const by = extractYear(ft.byId[b]?.birth?.date) || '9999';
+      return ay.localeCompare(by);
+    });
+  }
+
+  // male on left, female on right — determine which is which
+  const male = (p.sex === 'M') ? p : sp;
+  const female = (p.sex === 'F') ? p : sp;
+  const maleSibIds = male?.id === p.id ? pSibIds : spSibIds;
+  const femaleSibIds = female?.id === p.id ? pSibIds : spSibIds;
+
+  const totalSibs = pSibIds.length + spSibIds.length;
+  const rowLabel = totalSibs > 0 ? `Siblings & Focus` : 'Focus';
+  addRowLabel(layout, rowLabel);
+
+  // 3-column grid: left-sibs | couple | right-sibs
+  const midGrid = document.createElement('div');
+  midGrid.style.cssText = `
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 0 24px;
+  `;
+
+  // Left column: male's siblings (right-aligned, closest to couple)
+  const leftCol = document.createElement('div');
+  leftCol.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:flex-start;';
+  maleSibIds.forEach(id => {
+    const sib = ft.byId[id];
+    if (sib) leftCol.appendChild(makeNode(sib, 'Sibling', false));
+  });
+  midGrid.appendChild(leftCol);
+
+  // Center column: couple or single person
+  const coupleCol = document.createElement('div');
+  coupleCol.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:4px;';
+  if (sp) {
+    const mNode = makeNode(male, null, male?.id === p.id);
+    const fNode = makeNode(female, null, female?.id === p.id);
+    const mline = document.createElement('div');
+    mline.className = 'marriage-line';
+    coupleCol.appendChild(mNode);
+    coupleCol.appendChild(mline);
+    coupleCol.appendChild(fNode);
+    // additional spouses
+    for (let i = 1; i < p.spouses.length; i++) {
+      const sp2 = ft.byId[p.spouses[i].id];
+      if (sp2) {
+        const ml2 = document.createElement('div'); ml2.className = 'marriage-line';
+        coupleCol.appendChild(ml2);
+        coupleCol.appendChild(makeNode(sp2, 'Spouse', false));
+      }
+    }
+  } else {
+    coupleCol.appendChild(makeNode(p, null, true));
+  }
+  midGrid.appendChild(coupleCol);
+
+  // Right column: female's siblings (left-aligned, closest to couple)
+  const rightCol = document.createElement('div');
+  rightCol.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-start; align-items:flex-start;';
+  femaleSibIds.forEach(id => {
+    const sib = ft.byId[id];
+    if (sib) rightCol.appendChild(makeNode(sib, 'Sibling', false));
+  });
+  midGrid.appendChild(rightCol);
+
+  layout.appendChild(midGrid);
+
+  // ── ROW 3: Children ─────────────────────────────────
+  if (p.children.length > 0) {
+    addConnector(layout);
+    addRowLabel(layout, `Children (${p.children.length})`);
+    const childRow = document.createElement('div');
+    childRow.className = 'tree-row';
+    childRow.style.flexWrap = 'wrap';
+    p.children.forEach(ch => {
+      const child = ft.byId[ch.id];
+      if (child) childRow.appendChild(makeNode(child, null, false));
+    });
+    layout.appendChild(childRow);
+  }
+}
+
+function addRowLabel(container, text) {
+  const el = document.createElement('div');
+  el.className = 'tree-row-label';
+  el.textContent = text;
+  container.appendChild(el);
+}
+
+function addConnector(container) {
+  const el = document.createElement('div');
+  el.style.cssText = 'width:2px;height:32px;background:var(--line);margin:0 auto;';
+  container.appendChild(el);
+}
+
+init();
+</script>
+</body>
+</html>
