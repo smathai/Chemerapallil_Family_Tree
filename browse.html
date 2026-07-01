@@ -73,6 +73,7 @@
   <a href="browse.html" class="active">Browse</a>
   <a href="fulltree.html">Full Tree</a>
   <a href="relationships.html">Relationships</a>
+  <a href="submit.html">Suggest a correction</a>
   <span class="stats" id="header-stats"></span>
 </nav>
 
@@ -189,6 +190,7 @@ function showProfile(id, push = true) {
     <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
       <button class="action-btn" id="view-tree-btn">View in tree →</button>
       <button class="action-btn" id="find-rel-btn" style="background:var(--accent2)">Find relationship →</button>
+      <button class="action-btn" id="suggest-btn" style="background:transparent;color:var(--muted);border:1.5px solid var(--border)">Suggest a correction</button>
     </div>
   `;
 
@@ -200,6 +202,9 @@ function showProfile(id, push = true) {
   });
   document.getElementById("find-rel-btn").addEventListener("click", () => {
     window.location.href = `relationships.html?b=${encodeURIComponent(id)}`;
+  });
+  document.getElementById("suggest-btn").addEventListener("click", () => {
+    window.location.href = `submit.html?person=${encodeURIComponent(p.display_name)}`;
   });
 }
 
