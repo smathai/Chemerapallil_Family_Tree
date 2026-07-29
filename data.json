@@ -1642,7 +1642,10 @@
       "date": "05/10/1937",
       "place": "Kottayam,,Kerala,India"
     },
-    "death": {},
+    "death": {
+      "deceased": true,
+      "date": "6/25/2026"
+    },
     "names": [
       {
         "given": "Jacob",
