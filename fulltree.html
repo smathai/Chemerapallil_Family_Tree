@@ -86,6 +86,37 @@
   #tooltip .tt-name.M { color: var(--male); }
   #tooltip .tt-sub { color: var(--muted); font-size: 12px; }
 
+  /* Surname panel */
+  .surname-panel {
+    position: fixed; top: 92px; right: 0; bottom: 0; width: 320px;
+    background: var(--card); border-left: 1px solid var(--border);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.10); z-index: 250;
+    transform: translateX(100%); transition: transform 0.25s ease;
+    display: flex; flex-direction: column;
+  }
+  .surname-panel.open { transform: translateX(0); }
+  .surname-panel-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 16px 18px; border-bottom: 1px solid var(--border);
+  }
+  .surname-panel-title { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 600; color: var(--accent); }
+  .surname-panel-count { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .surname-panel-close {
+    background: none; border: none; font-size: 22px; line-height: 1;
+    color: var(--muted); cursor: pointer; padding: 2px 6px;
+  }
+  .surname-panel-close:hover { color: var(--ink); }
+  .surname-panel-list { overflow-y: auto; flex: 1; padding: 8px 0; }
+  .surname-panel-item {
+    padding: 9px 18px; cursor: pointer; font-size: 13.5px;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    border-bottom: 1px solid var(--bg);
+  }
+  .surname-panel-item:hover { background: var(--bg); }
+  .surname-panel-item .spn-name.M { color: var(--male); }
+  .surname-panel-item .spn-name.F { color: var(--female); }
+  .surname-panel-item .spn-year { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
   /* Controls */
   .zoom-controls {
     position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 5px; z-index: 100;
@@ -145,6 +176,17 @@
 
 <div id="tooltip"><div class="tt-name" id="tt-name"></div><div class="tt-sub" id="tt-sub"></div></div>
 
+<div class="surname-panel" id="surname-panel">
+  <div class="surname-panel-header">
+    <div>
+      <div class="surname-panel-title" id="surname-panel-title"></div>
+      <div class="surname-panel-count" id="surname-panel-count"></div>
+    </div>
+    <button class="surname-panel-close" id="surname-panel-close">&times;</button>
+  </div>
+  <div class="surname-panel-list" id="surname-panel-list"></div>
+</div>
+
 <div class="zoom-controls" id="zoom-controls">
   <button class="zbtn" id="z-in">+</button>
   <button class="zbtn" id="z-out">−</button>
@@ -202,6 +244,7 @@ async function init() {
       document.getElementById('zoom-controls').style.display = currentView === 'swim' ? 'none' : 'flex';
       document.getElementById('r-left').style.display = currentView === 'radial' ? 'flex' : 'none';
       document.getElementById('r-right').style.display = currentView === 'radial' ? 'flex' : 'none';
+      closeSurnamePanel();
       renderCurrent();
     });
   });
@@ -212,6 +255,7 @@ async function init() {
   document.getElementById('z-fit').addEventListener('click', () => fitCurrent());
   document.getElementById('r-left').addEventListener('click', () => rotateRadial(-30));
   document.getElementById('r-right').addEventListener('click', () => rotateRadial(30));
+  document.getElementById('surname-panel-close').addEventListener('click', closeSurnamePanel);
 
   setupSearch();
 
@@ -445,7 +489,8 @@ function renderSurname() {
       .on('start', (e,d) => { if(!e.active) sim.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
       .on('drag', (e,d) => { d.fx=e.x; d.fy=e.y; })
       .on('end', (e,d) => { if(!e.active) sim.alphaTarget(0); d.fx=null; d.fy=null; })
-    );
+    )
+    .on('click', (e, d) => openSurnamePanel(d.id, surnameMembers[d.id] || []));
 
   ndEl.append('rect').attr('x', -NW2/2).attr('y', -NH2/2).attr('width', NW2).attr('height', NH2)
     .attr('rx', 6).attr('fill','var(--card)').attr('stroke','var(--border)').attr('stroke-width', 1.5);
@@ -469,6 +514,49 @@ function renderSurname() {
     applyFit(svgEl, g, zoom, ns, NW2, NH2);
   };
   setTimeout(_fitFn, 2000); // let sim settle first
+}
+
+function closeSurnamePanel() {
+  document.getElementById('surname-panel').classList.remove('open');
+}
+
+function openSurnamePanel(surname, memberIds) {
+  const people = memberIds.map(id => BYID[id]).filter(Boolean)
+    .sort((a, b) => (yr(a.birth?.date) || '9999').localeCompare(yr(b.birth?.date) || '9999'));
+
+  document.getElementById('surname-panel-title').textContent = surname;
+  document.getElementById('surname-panel-count').textContent = `${people.length} ${people.length === 1 ? 'person' : 'people'}`;
+
+  const list = document.getElementById('surname-panel-list');
+  list.innerHTML = '';
+  people.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'surname-panel-item';
+    const y = yr(p.birth?.date);
+    div.innerHTML = `<span class="spn-name ${p.sex || ''}">${p.display_name}</span>${y ? `<span class="spn-year">${y}</span>` : ''}`;
+    div.addEventListener('click', () => {
+      if (currentView === 'radial') {
+        highlightId = p.id;
+        if (_radialNodeMap[p.id]) {
+          radialHighlight(p.id);
+        } else {
+          const bestRoot = PERSON_ROOT[p.id];
+          if (bestRoot) {
+            currentRoot = bestRoot;
+            document.getElementById('root-select').value = bestRoot;
+            renderRadial();
+          } else {
+            window.location.href = `tree.html?id=${encodeURIComponent(p.id)}`;
+          }
+        }
+      } else {
+        window.location.href = `tree.html?id=${encodeURIComponent(p.id)}`;
+      }
+    });
+    list.appendChild(div);
+  });
+
+  document.getElementById('surname-panel').classList.add('open');
 }
 
 // ─── 4. Radial / Fan ─────────────────────────────────────────────────────────
