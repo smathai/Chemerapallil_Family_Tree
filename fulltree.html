@@ -149,6 +149,8 @@
   <button class="zbtn" id="z-in">+</button>
   <button class="zbtn" id="z-out">−</button>
   <button class="zbtn" id="z-fit" style="font-size:13px">⊡</button>
+  <button class="zbtn" id="r-left" style="font-size:15px; display:none;" title="Rotate left">⟲</button>
+  <button class="zbtn" id="r-right" style="font-size:15px; display:none;" title="Rotate right">⟳</button>
 </div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -198,6 +200,8 @@ async function init() {
       currentView = t.dataset.view;
       document.getElementById(`panel-${currentView}`).classList.add('active');
       document.getElementById('zoom-controls').style.display = currentView === 'swim' ? 'none' : 'flex';
+      document.getElementById('r-left').style.display = currentView === 'radial' ? 'flex' : 'none';
+      document.getElementById('r-right').style.display = currentView === 'radial' ? 'flex' : 'none';
       renderCurrent();
     });
   });
@@ -206,6 +210,8 @@ async function init() {
   document.getElementById('z-in').addEventListener('click', () => zoomBy(1.4));
   document.getElementById('z-out').addEventListener('click', () => zoomBy(1/1.4));
   document.getElementById('z-fit').addEventListener('click', () => fitCurrent());
+  document.getElementById('r-left').addEventListener('click', () => rotateRadial(-30));
+  document.getElementById('r-right').addEventListener('click', () => rotateRadial(30));
 
   setupSearch();
 
@@ -217,6 +223,8 @@ async function init() {
     document.querySelectorAll('.view-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${v}`));
     currentView = v;
     document.getElementById('zoom-controls').style.display = v === 'swim' ? 'none' : 'flex';
+    document.getElementById('r-left').style.display = v === 'radial' ? 'flex' : 'none';
+    document.getElementById('r-right').style.display = v === 'radial' ? 'flex' : 'none';
   }
   if (params.get('root')) {
     currentRoot = params.get('root');
@@ -464,7 +472,35 @@ function renderSurname() {
 }
 
 // ─── 4. Radial / Fan ─────────────────────────────────────────────────────────
-let _radialZoom = null, _radialSvgEl = null, _radialG = null, _radialNodeMap = {};
+let _radialZoom = null, _radialSvgEl = null, _radialG = null, _radialNodeMap = {}, _radialRotation = 0;
+
+// A node's label is flipped 180° for readability when it falls in the
+// bottom half of the circle. That threshold has to move together with the
+// whole-fan rotation, or labels render upside-down after rotating.
+function radialEffAngle(d) {
+  const twoPi = 2 * Math.PI;
+  return ((d.x + _radialRotation * Math.PI / 180) % twoPi + twoPi) % twoPi;
+}
+
+function updateRadialLabelOrientations() {
+  if (!_radialG) return;
+  _radialG.selectAll('.nd-label')
+    .attr('x', d => radialEffAngle(d) < Math.PI ? 8 : -8)
+    .attr('text-anchor', d => radialEffAngle(d) < Math.PI ? 'start' : 'end')
+    .attr('transform', d => radialEffAngle(d) >= Math.PI ? 'rotate(180)' : null);
+}
+
+function rotateRadial(deltaDeg) {
+  _radialRotation = (_radialRotation + deltaDeg + 360) % 360;
+  if (_radialG) {
+    _radialG.transition().duration(400).attr('transform', `rotate(${_radialRotation})`)
+      .on('end', updateRadialLabelOrientations);
+  }
+  // Node screen-positions shifted, so re-run the highlight centering if active
+  if (highlightId && _radialNodeMap[highlightId] && currentView === 'radial') {
+    setTimeout(() => radialHighlight(highlightId), 400);
+  }
+}
 
 function renderRadial() {
   const svgEl = document.getElementById('svg-radial');
@@ -476,11 +512,15 @@ function renderRadial() {
   const W = svgEl.clientWidth, H = svgEl.clientHeight;
   const cx = W/2, cy = H/2;
 
-  const g = svg.append('g').attr('transform', `translate(${cx},${cy})`);
+  // Two nested groups: zoomG handles pan/zoom (driven by d3.zoom), g handles
+  // rotation independently so the rotate buttons don't fight the drag/scroll
+  // pan-and-zoom gesture already bound to the canvas.
+  const zoomG = svg.append('g').attr('transform', `translate(${cx},${cy})`);
+  const g = zoomG.append('g').attr('class', 'radial-rot').attr('transform', `rotate(${_radialRotation})`);
   _radialG = g;
 
   const zoom = d3.zoom().scaleExtent([0.08, 6])
-    .on('zoom', e => g.attr('transform', e.transform));
+    .on('zoom', e => zoomG.attr('transform', e.transform));
   _radialZoom = zoom;
   _zoomRef = zoom;
   svg.call(zoom).call(zoom.transform, d3.zoomIdentity.translate(cx, cy));
@@ -515,9 +555,9 @@ function renderRadial() {
 
   nd.append('text').attr('class', 'nd-label')
     .attr('dy', '0.31em')
-    .attr('x', d => d.x < Math.PI ? 8 : -8)
-    .attr('text-anchor', d => d.x < Math.PI ? 'start' : 'end')
-    .attr('transform', d => d.x >= Math.PI ? 'rotate(180)' : null)
+    .attr('x', d => radialEffAngle(d) < Math.PI ? 8 : -8)
+    .attr('text-anchor', d => radialEffAngle(d) < Math.PI ? 'start' : 'end')
+    .attr('transform', d => radialEffAngle(d) >= Math.PI ? 'rotate(180)' : null)
     .attr('font-family', 'Jost, sans-serif')
     .attr('font-size', d => Math.max(7, 11 - d.depth))
     .attr('fill', 'var(--ink)')
@@ -580,7 +620,7 @@ function radialHighlight(pid) {
   // Zoom to the highlighted node
   const svgEl = _radialSvgEl;
   const W = svgEl.clientWidth, H = svgEl.clientHeight;
-  const angle = nodeData.x - Math.PI / 2;
+  const angle = nodeData.x - Math.PI / 2 + (_radialRotation * Math.PI / 180);
   const nx = nodeData.y * Math.cos(angle);
   const ny = nodeData.y * Math.sin(angle);
   const scale = 2.2;
