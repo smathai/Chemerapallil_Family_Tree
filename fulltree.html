@@ -127,6 +127,19 @@
   }
   .zbtn:hover { background: var(--accent); }
 
+  .rotate-slider-wrap {
+    position: fixed; top: 50%; right: 24px; transform: translateY(-50%);
+    display: none; flex-direction: column; align-items: center; gap: 10px;
+    z-index: 100; background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 11px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+  .rotate-slider-wrap.visible { display: flex; }
+  .rotate-slider-value { font-size: 11px; color: var(--muted); }
+  .rotate-slider {
+    writing-mode: vertical-lr; direction: rtl;
+    width: 8px; height: 160px; accent-color: var(--accent); cursor: pointer;
+  }
+
   /* Swimlane specific */
   #panel-swim { overflow: auto; cursor: default; }
   .swim-inner { padding: 20px 32px 40px; min-width: 100%; display: inline-block; }
@@ -191,8 +204,11 @@
   <button class="zbtn" id="z-in">+</button>
   <button class="zbtn" id="z-out">−</button>
   <button class="zbtn" id="z-fit" style="font-size:13px">⊡</button>
-  <button class="zbtn" id="r-left" style="font-size:15px; display:none;" title="Rotate left">⟲</button>
-  <button class="zbtn" id="r-right" style="font-size:15px; display:none;" title="Rotate right">⟳</button>
+</div>
+
+<div class="rotate-slider-wrap" id="rotate-slider-wrap">
+  <div class="rotate-slider-value" id="rotate-slider-value">0°</div>
+  <input type="range" class="rotate-slider" id="rotate-slider" min="0" max="360" step="1" value="0">
 </div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -242,8 +258,7 @@ async function init() {
       currentView = t.dataset.view;
       document.getElementById(`panel-${currentView}`).classList.add('active');
       document.getElementById('zoom-controls').style.display = currentView === 'swim' ? 'none' : 'flex';
-      document.getElementById('r-left').style.display = currentView === 'radial' ? 'flex' : 'none';
-      document.getElementById('r-right').style.display = currentView === 'radial' ? 'flex' : 'none';
+      document.getElementById('rotate-slider-wrap').classList.toggle('visible', currentView === 'radial');
       closeSurnamePanel();
       renderCurrent();
     });
@@ -253,9 +268,14 @@ async function init() {
   document.getElementById('z-in').addEventListener('click', () => zoomBy(1.4));
   document.getElementById('z-out').addEventListener('click', () => zoomBy(1/1.4));
   document.getElementById('z-fit').addEventListener('click', () => fitCurrent());
-  document.getElementById('r-left').addEventListener('click', () => rotateRadial(-30));
-  document.getElementById('r-right').addEventListener('click', () => rotateRadial(30));
   document.getElementById('surname-panel-close').addEventListener('click', closeSurnamePanel);
+
+  // Rotation slider
+  const rSlider = document.getElementById('rotate-slider');
+  rSlider.addEventListener('input', e => setRadialRotation(+e.target.value));
+  rSlider.addEventListener('change', () => {
+    if (highlightId && _radialNodeMap[highlightId] && currentView === 'radial') radialHighlight(highlightId);
+  });
 
   setupSearch();
 
@@ -267,8 +287,7 @@ async function init() {
     document.querySelectorAll('.view-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${v}`));
     currentView = v;
     document.getElementById('zoom-controls').style.display = v === 'swim' ? 'none' : 'flex';
-    document.getElementById('r-left').style.display = v === 'radial' ? 'flex' : 'none';
-    document.getElementById('r-right').style.display = v === 'radial' ? 'flex' : 'none';
+    document.getElementById('rotate-slider-wrap').classList.toggle('visible', v === 'radial');
   }
   if (params.get('root')) {
     currentRoot = params.get('root');
@@ -578,16 +597,14 @@ function updateRadialLabelOrientations() {
     .attr('transform', d => radialEffAngle(d) >= Math.PI ? 'rotate(180)' : null);
 }
 
-function rotateRadial(deltaDeg) {
-  _radialRotation = (_radialRotation + deltaDeg + 360) % 360;
+function setRadialRotation(deg) {
+  _radialRotation = ((deg % 360) + 360) % 360;
   if (_radialG) {
-    _radialG.transition().duration(400).attr('transform', `rotate(${_radialRotation})`)
-      .on('end', updateRadialLabelOrientations);
+    _radialG.attr('transform', `rotate(${_radialRotation})`);
+    updateRadialLabelOrientations();
   }
-  // Node screen-positions shifted, so re-run the highlight centering if active
-  if (highlightId && _radialNodeMap[highlightId] && currentView === 'radial') {
-    setTimeout(() => radialHighlight(highlightId), 400);
-  }
+  const valueLabel = document.getElementById('rotate-slider-value');
+  if (valueLabel) valueLabel.textContent = `${Math.round(_radialRotation)}°`;
 }
 
 function renderRadial() {
@@ -601,11 +618,16 @@ function renderRadial() {
   const cx = W/2, cy = H/2;
 
   // Two nested groups: zoomG handles pan/zoom (driven by d3.zoom), g handles
-  // rotation independently so the rotate buttons don't fight the drag/scroll
+  // rotation independently so the rotate slider doesn't fight the drag/scroll
   // pan-and-zoom gesture already bound to the canvas.
   const zoomG = svg.append('g').attr('transform', `translate(${cx},${cy})`);
   const g = zoomG.append('g').attr('class', 'radial-rot').attr('transform', `rotate(${_radialRotation})`);
   _radialG = g;
+
+  const slider = document.getElementById('rotate-slider');
+  if (slider) slider.value = _radialRotation;
+  const valueLabel = document.getElementById('rotate-slider-value');
+  if (valueLabel) valueLabel.textContent = `${Math.round(_radialRotation)}°`;
 
   const zoom = d3.zoom().scaleExtent([0.08, 6])
     .on('zoom', e => zoomG.attr('transform', e.transform));
