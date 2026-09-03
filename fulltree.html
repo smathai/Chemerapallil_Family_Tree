@@ -449,6 +449,8 @@ function renderCollapsible() {
 }
 
 // ─── 3. Surname tree ──────────────────────────────────────────────────────────
+let _surnameNdEl = null, _surnameLkEl = null, _surnameLinks = [], _surnameHighlighted = null;
+
 function renderSurname() {
   const svgEl = document.getElementById('svg-surname');
   const svg = d3.select(svgEl);
@@ -456,6 +458,10 @@ function renderSurname() {
   const g = svg.append('g');
   const zoom = makeZoom(svgEl, g, 'surname');
   _zoomRef = zoom;
+  _surnameHighlighted = null;
+
+  // Clicking empty canvas (not a surname box) clears any active highlight
+  svg.on('click', () => clearSurnameHighlight());
 
   // Build surname → surname edges: when person with surname A has child with surname B
   const surnameOf = id => {
@@ -509,7 +515,11 @@ function renderSurname() {
       .on('drag', (e,d) => { d.fx=e.x; d.fy=e.y; })
       .on('end', (e,d) => { if(!e.active) sim.alphaTarget(0); d.fx=null; d.fy=null; })
     )
-    .on('click', (e, d) => openSurnamePanel(d.id, surnameMembers[d.id] || []));
+    .on('click', (e, d) => {
+      e.stopPropagation();
+      openSurnamePanel(d.id, surnameMembers[d.id] || []);
+      surnameHighlight(d.id);
+    });
 
   ndEl.append('rect').attr('x', -NW2/2).attr('y', -NH2/2).attr('width', NW2).attr('height', NH2)
     .attr('rx', 6).attr('fill','var(--card)').attr('stroke','var(--border)').attr('stroke-width', 1.5);
@@ -521,6 +531,10 @@ function renderSurname() {
   ndEl.append('text').attr('text-anchor','middle').attr('y', 13)
     .attr('font-family','Jost, sans-serif').attr('font-size', 10).attr('fill','var(--muted)')
     .text(d => `${d.count} ${d.count===1?'person':'people'}`);
+
+  _surnameNdEl = ndEl;
+  _surnameLkEl = lkEl;
+  _surnameLinks = links;
 
   sim.on('tick', () => {
     lkEl.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
@@ -537,6 +551,44 @@ function renderSurname() {
 
 function closeSurnamePanel() {
   document.getElementById('surname-panel').classList.remove('open');
+  clearSurnameHighlight();
+}
+
+function surnameEdgeEnds(l) {
+  return [typeof l.source === 'object' ? l.source.id : l.source,
+          typeof l.target === 'object' ? l.target.id : l.target];
+}
+
+function surnameHighlight(surname) {
+  if (!_surnameNdEl || !_surnameLkEl) return;
+  _surnameHighlighted = surname;
+
+  const connected = new Set([surname]);
+  _surnameLinks.forEach(l => {
+    const [s, t] = surnameEdgeEnds(l);
+    if (s === surname) connected.add(t);
+    if (t === surname) connected.add(s);
+  });
+
+  _surnameNdEl.style('opacity', d => connected.has(d.id) ? 1 : 0.15);
+  _surnameNdEl.select('rect')
+    .attr('stroke', d => d.id === surname ? 'var(--accent)' : 'var(--border)')
+    .attr('stroke-width', d => d.id === surname ? 2.5 : 1.5);
+
+  _surnameLkEl
+    .style('opacity', d => { const [s, t] = surnameEdgeEnds(d); return (s === surname || t === surname) ? 1 : 0.08; })
+    .attr('stroke', d => { const [s, t] = surnameEdgeEnds(d); return (s === surname || t === surname) ? 'var(--accent2)' : 'var(--line)'; });
+}
+
+function clearSurnameHighlight() {
+  _surnameHighlighted = null;
+  if (_surnameNdEl) {
+    _surnameNdEl.style('opacity', 1);
+    _surnameNdEl.select('rect').attr('stroke', 'var(--border)').attr('stroke-width', 1.5);
+  }
+  if (_surnameLkEl) {
+    _surnameLkEl.style('opacity', 0.6).attr('stroke', 'var(--line)');
+  }
 }
 
 function openSurnamePanel(surname, memberIds) {
