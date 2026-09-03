@@ -116,6 +116,10 @@
   .surname-panel-item .spn-name.M { color: var(--male); }
   .surname-panel-item .spn-name.F { color: var(--female); }
   .surname-panel-item .spn-year { color: var(--muted); font-size: 11px; white-space: nowrap; }
+  .bridge-panel-item { justify-content: flex-start; flex-wrap: wrap; }
+  .bridge-panel-item .spn-name { cursor: pointer; }
+  .bridge-panel-item .spn-name:hover { text-decoration: underline; }
+  .bridge-arrow { color: var(--muted); font-size: 12px; }
 
   /* Controls */
   .zoom-controls {
@@ -449,7 +453,7 @@ function renderCollapsible() {
 }
 
 // ─── 3. Surname tree ──────────────────────────────────────────────────────────
-let _surnameNdEl = null, _surnameLkEl = null, _surnameLinks = [], _surnameHighlighted = null;
+let _surnameNdEl = null, _surnameLkEl = null, _surnameLkMarkerEl = null, _surnameLinks = [], _surnameHighlighted = null;
 
 function renderSurname() {
   const svgEl = document.getElementById('svg-surname');
@@ -471,6 +475,7 @@ function renderSurname() {
   };
 
   const edgeCounts = {};
+  const edgePairs = {}; // surname→surname key -> [{parentId, childId}, ...] — the actual bridge people
   const surnameMembers = {}; // surname → [person ids]
   for (const p of ALL) {
     const ps = surnameOf(p.id); if (!ps) continue;
@@ -480,6 +485,7 @@ function renderSurname() {
       const cs = surnameOf(ch.id); if (!cs || cs === ps) continue;
       const key = `${ps}→${cs}`;
       edgeCounts[key] = (edgeCounts[key]||0) + 1;
+      (edgePairs[key] || (edgePairs[key] = [])).push({ parentId: p.id, childId: ch.id });
     }
   }
 
@@ -491,7 +497,7 @@ function renderSurname() {
   const nodes = surnames.map(s => ({ id: s, count: surnameMembers[s].length }));
   const links = Object.entries(edgeCounts)
     .filter(([k]) => { const [a,b] = k.split('→'); return surnameSet.has(a) && surnameSet.has(b); })
-    .map(([k, w]) => { const [s,t] = k.split('→'); return { source: s, target: t, weight: w }; });
+    .map(([k, w]) => { const [s,t] = k.split('→'); return { source: s, target: t, weight: w, pairs: edgePairs[k] || [] }; });
 
   const W = svgEl.clientWidth, H = svgEl.clientHeight;
 
@@ -505,6 +511,19 @@ function renderSurname() {
   const lkEl = g.selectAll('.lk').data(links).join('line').attr('class','lk')
     .attr('stroke','var(--line)').attr('stroke-width', d => Math.min(d.weight, 6))
     .attr('stroke-opacity', 0.6);
+
+  // Small clickable "+" marker at each link's midpoint, revealing the
+  // specific parent→child pairs that bridge those two surnames.
+  const lkMarkerEl = g.selectAll('.lk-marker').data(links).join('circle').attr('class','lk-marker')
+    .attr('r', 8).attr('fill','var(--card)').attr('stroke','var(--accent2)').attr('stroke-width', 1.5)
+    .style('cursor','pointer')
+    .on('click', (e, d) => { e.stopPropagation(); openBridgePanel(d); });
+
+  const lkMarkerText = g.selectAll('.lk-marker-text').data(links).join('text').attr('class','lk-marker-text')
+    .attr('text-anchor','middle').attr('dy','0.32em')
+    .attr('font-size', 12).attr('fill','var(--accent2)').attr('font-family','Jost, sans-serif')
+    .style('pointer-events','none').style('user-select','none')
+    .text('+');
 
   // Draw nodes
   const NW2 = 110, NH2 = 42;
@@ -534,10 +553,13 @@ function renderSurname() {
 
   _surnameNdEl = ndEl;
   _surnameLkEl = lkEl;
+  _surnameLkMarkerEl = lkMarkerEl;
   _surnameLinks = links;
 
   sim.on('tick', () => {
     lkEl.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    lkMarkerEl.attr('cx', d => (d.source.x + d.target.x) / 2).attr('cy', d => (d.source.y + d.target.y) / 2);
+    lkMarkerText.attr('x', d => (d.source.x + d.target.x) / 2).attr('y', d => (d.source.y + d.target.y) / 2);
     ndEl.attr('transform',d=>`translate(${d.x},${d.y})`);
   });
 
@@ -578,6 +600,10 @@ function surnameHighlight(surname) {
   _surnameLkEl
     .style('opacity', d => { const [s, t] = surnameEdgeEnds(d); return (s === surname || t === surname) ? 1 : 0.08; })
     .attr('stroke', d => { const [s, t] = surnameEdgeEnds(d); return (s === surname || t === surname) ? 'var(--accent2)' : 'var(--line)'; });
+
+  if (_surnameLkMarkerEl) {
+    _surnameLkMarkerEl.style('opacity', d => { const [s, t] = surnameEdgeEnds(d); return (s === surname || t === surname) ? 1 : 0.08; });
+  }
 }
 
 function clearSurnameHighlight() {
@@ -588,6 +614,29 @@ function clearSurnameHighlight() {
   }
   if (_surnameLkEl) {
     _surnameLkEl.style('opacity', 0.6).attr('stroke', 'var(--line)');
+  }
+  if (_surnameLkMarkerEl) {
+    _surnameLkMarkerEl.style('opacity', 1);
+  }
+}
+
+function jumpToPerson(personId) {
+  if (currentView === 'radial') {
+    highlightId = personId;
+    if (_radialNodeMap[personId]) {
+      radialHighlight(personId);
+    } else {
+      const bestRoot = PERSON_ROOT[personId];
+      if (bestRoot) {
+        currentRoot = bestRoot;
+        document.getElementById('root-select').value = bestRoot;
+        renderRadial();
+      } else {
+        window.location.href = `tree.html?id=${encodeURIComponent(personId)}`;
+      }
+    }
+  } else {
+    window.location.href = `tree.html?id=${encodeURIComponent(personId)}`;
   }
 }
 
@@ -605,25 +654,46 @@ function openSurnamePanel(surname, memberIds) {
     div.className = 'surname-panel-item';
     const y = yr(p.birth?.date);
     div.innerHTML = `<span class="spn-name ${p.sex || ''}">${p.display_name}</span>${y ? `<span class="spn-year">${y}</span>` : ''}`;
-    div.addEventListener('click', () => {
-      if (currentView === 'radial') {
-        highlightId = p.id;
-        if (_radialNodeMap[p.id]) {
-          radialHighlight(p.id);
-        } else {
-          const bestRoot = PERSON_ROOT[p.id];
-          if (bestRoot) {
-            currentRoot = bestRoot;
-            document.getElementById('root-select').value = bestRoot;
-            renderRadial();
-          } else {
-            window.location.href = `tree.html?id=${encodeURIComponent(p.id)}`;
-          }
-        }
-      } else {
-        window.location.href = `tree.html?id=${encodeURIComponent(p.id)}`;
-      }
-    });
+    div.addEventListener('click', () => jumpToPerson(p.id));
+    list.appendChild(div);
+  });
+
+  document.getElementById('surname-panel').classList.add('open');
+}
+
+function openBridgePanel(link) {
+  const s = typeof link.source === 'object' ? link.source.id : link.source;
+  const t = typeof link.target === 'object' ? link.target.id : link.target;
+  const pairs = link.pairs || [];
+
+  document.getElementById('surname-panel-title').textContent = `${s} → ${t}`;
+  document.getElementById('surname-panel-count').textContent = `${pairs.length} ${pairs.length === 1 ? 'connection' : 'connections'}`;
+
+  const list = document.getElementById('surname-panel-list');
+  list.innerHTML = '';
+  pairs.forEach(pair => {
+    const parent = BYID[pair.parentId], child = BYID[pair.childId];
+    if (!parent || !child) return;
+    const div = document.createElement('div');
+    div.className = 'surname-panel-item bridge-panel-item';
+
+    const parentSpan = document.createElement('span');
+    parentSpan.className = `spn-name ${parent.sex || ''}`;
+    parentSpan.textContent = parent.display_name;
+    parentSpan.addEventListener('click', e => { e.stopPropagation(); jumpToPerson(parent.id); });
+
+    const arrow = document.createElement('span');
+    arrow.className = 'bridge-arrow';
+    arrow.textContent = '→';
+
+    const childSpan = document.createElement('span');
+    childSpan.className = `spn-name ${child.sex || ''}`;
+    childSpan.textContent = child.display_name;
+    childSpan.addEventListener('click', e => { e.stopPropagation(); jumpToPerson(child.id); });
+
+    div.appendChild(parentSpan);
+    div.appendChild(arrow);
+    div.appendChild(childSpan);
     list.appendChild(div);
   });
 
