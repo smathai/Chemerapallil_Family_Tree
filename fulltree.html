@@ -513,13 +513,19 @@ function renderSurname() {
     .attr('stroke-opacity', 0.6);
 
   // Small clickable "+" marker at each link's midpoint, revealing the
-  // specific parent→child pairs that bridge those two surnames.
-  const lkMarkerEl = g.selectAll('.lk-marker').data(links).join('circle').attr('class','lk-marker')
-    .attr('r', 8).attr('fill','var(--card)').attr('stroke','var(--accent2)').attr('stroke-width', 1.5)
+  // specific parent→child pairs that bridge those two surnames. Hidden
+  // until a surname is selected, then shown only on its live connections
+  // (see surnameHighlight/clearSurnameHighlight).
+  const lkMarkerG = g.selectAll('.lk-marker-g').data(links).join('g').attr('class','lk-marker-g')
     .style('cursor','pointer')
+    .style('opacity', 0)
+    .style('pointer-events', 'none')
     .on('click', (e, d) => { e.stopPropagation(); openBridgePanel(d); });
 
-  const lkMarkerText = g.selectAll('.lk-marker-text').data(links).join('text').attr('class','lk-marker-text')
+  lkMarkerG.append('circle').attr('class','lk-marker')
+    .attr('r', 8).attr('fill','var(--card)').attr('stroke','var(--accent2)').attr('stroke-width', 1.5);
+
+  lkMarkerG.append('text').attr('class','lk-marker-text')
     .attr('text-anchor','middle').attr('dy','0.32em')
     .attr('font-size', 12).attr('fill','var(--accent2)').attr('font-family','Jost, sans-serif')
     .style('pointer-events','none').style('user-select','none')
@@ -553,19 +559,17 @@ function renderSurname() {
 
   _surnameNdEl = ndEl;
   _surnameLkEl = lkEl;
-  _surnameLkMarkerEl = lkMarkerEl;
+  _surnameLkMarkerEl = lkMarkerG;
   _surnameLinks = links;
 
   // Surname boxes are appended after the markers, so without this they'd
   // always win SVG hit-testing where a marker happens to sit under one —
   // including when the box is faded near-invisible during a dim/highlight.
-  lkMarkerEl.raise();
-  lkMarkerText.raise();
+  lkMarkerG.raise();
 
   sim.on('tick', () => {
     lkEl.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
-    lkMarkerEl.attr('cx', d => (d.source.x + d.target.x) / 2).attr('cy', d => (d.source.y + d.target.y) / 2);
-    lkMarkerText.attr('x', d => (d.source.x + d.target.x) / 2).attr('y', d => (d.source.y + d.target.y) / 2);
+    lkMarkerG.attr('transform', d => `translate(${(d.source.x + d.target.x) / 2}, ${(d.source.y + d.target.y) / 2})`);
     ndEl.attr('transform',d=>`translate(${d.x},${d.y})`);
   });
 
@@ -608,7 +612,9 @@ function surnameHighlight(surname) {
     .attr('stroke', d => { const [s, t] = surnameEdgeEnds(d); return (s === surname || t === surname) ? 'var(--accent2)' : 'var(--line)'; });
 
   if (_surnameLkMarkerEl) {
-    _surnameLkMarkerEl.style('opacity', d => { const [s, t] = surnameEdgeEnds(d); return (s === surname || t === surname) ? 1 : 0.08; });
+    _surnameLkMarkerEl
+      .style('opacity', d => { const [s, t] = surnameEdgeEnds(d); return (s === surname || t === surname) ? 1 : 0; })
+      .style('pointer-events', d => { const [s, t] = surnameEdgeEnds(d); return (s === surname || t === surname) ? 'auto' : 'none'; });
   }
 }
 
@@ -622,7 +628,7 @@ function clearSurnameHighlight() {
     _surnameLkEl.style('opacity', 0.6).attr('stroke', 'var(--line)');
   }
   if (_surnameLkMarkerEl) {
-    _surnameLkMarkerEl.style('opacity', 1);
+    _surnameLkMarkerEl.style('opacity', 0).style('pointer-events', 'none');
   }
 }
 
