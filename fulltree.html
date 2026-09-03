@@ -492,12 +492,28 @@ function renderSurname() {
   const surnames = Object.keys(surnameMembers).filter(s => surnameMembers[s].length >= 2);
   const surnameSet = new Set(surnames);
 
+  // Merge A→B and B→A into a single undirected connection. Left separate,
+  // they'd draw as two perfectly-overlapping lines with coincident
+  // midpoints — so their "+" markers would overlap too, and only
+  // whichever one happened to be on top would ever be clickable.
+  const undirectedEdges = {}; // "A↔B" (surnames sorted) -> { a, b, weight, pairs }
+  Object.entries(edgeCounts).forEach(([key, w]) => {
+    const [s, t] = key.split('→');
+    if (!surnameSet.has(s) || !surnameSet.has(t)) return;
+    const uKey = [s, t].sort().join('↔');
+    if (!undirectedEdges[uKey]) {
+      const [a, b] = uKey.split('↔');
+      undirectedEdges[uKey] = { a, b, weight: 0, pairs: [] };
+    }
+    undirectedEdges[uKey].weight += w;
+    undirectedEdges[uKey].pairs.push(...(edgePairs[key] || []));
+  });
+
   // Nodes: surname boxes
   // Layout: force-directed
   const nodes = surnames.map(s => ({ id: s, count: surnameMembers[s].length }));
-  const links = Object.entries(edgeCounts)
-    .filter(([k]) => { const [a,b] = k.split('→'); return surnameSet.has(a) && surnameSet.has(b); })
-    .map(([k, w]) => { const [s,t] = k.split('→'); return { source: s, target: t, weight: w, pairs: edgePairs[k] || [] }; });
+  const links = Object.values(undirectedEdges)
+    .map(e => ({ source: e.a, target: e.b, weight: e.weight, pairs: e.pairs }));
 
   const W = svgEl.clientWidth, H = svgEl.clientHeight;
 
@@ -678,7 +694,7 @@ function openBridgePanel(link) {
   const t = typeof link.target === 'object' ? link.target.id : link.target;
   const pairs = link.pairs || [];
 
-  document.getElementById('surname-panel-title').textContent = `${s} → ${t}`;
+  document.getElementById('surname-panel-title').textContent = `${s} ↔ ${t}`;
   document.getElementById('surname-panel-count').textContent = `${pairs.length} ${pairs.length === 1 ? 'connection' : 'connections'}`;
 
   const list = document.getElementById('surname-panel-list');
