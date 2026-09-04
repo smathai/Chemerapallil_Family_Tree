@@ -774,6 +774,9 @@ function renderRadial() {
   const g = zoomG.append('g').attr('class', 'radial-rot').attr('transform', `rotate(${_radialRotation})`);
   _radialG = g;
 
+  // Clicking empty canvas (not a node) clears any active search highlight
+  svg.on('click', () => clearRadialHighlight());
+
   const slider = document.getElementById('rotate-slider');
   if (slider) slider.value = _radialRotation;
   const valueLabel = document.getElementById('rotate-slider-value');
@@ -807,7 +810,11 @@ function renderRadial() {
     .attr('transform', d => `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y}, 0)`)
     .style('cursor', 'pointer')
     .on('mouseover', (e, d) => showTip(e, d.data.name, d.data.birth, d.data.sex))
-    .on('mousemove', moveTip).on('mouseout', hideTip);
+    .on('mousemove', moveTip).on('mouseout', hideTip)
+    .on('click', (e, d) => {
+      e.stopPropagation();
+      window.location.href = `tree.html?id=${encodeURIComponent(d.data.id)}`;
+    });
 
   nd.append('circle').attr('class', 'nd-dot').attr('r', d => d.depth === 0 ? 6 : 4)
     .attr('fill', d => d.data.sex === 'F' ? 'var(--female)' : d.data.sex === 'M' ? 'var(--male)' : 'var(--muted)')
@@ -890,6 +897,28 @@ function radialHighlight(pid) {
         .translate(W / 2 - nx * scale, H / 2 - ny * scale)
         .scale(scale)
     );
+}
+
+function clearRadialHighlight() {
+  highlightId = null;
+  document.getElementById('search-input').value = '';
+  if (!_radialG) return;
+
+  _radialG.selectAll('.nd-dot')
+    .attr('opacity', 1)
+    .attr('r', d => d.depth === 0 ? 6 : 4)
+    .attr('stroke', 'var(--card)')
+    .attr('stroke-width', 1.5);
+
+  _radialG.selectAll('.nd-label')
+    .attr('opacity', 1)
+    .attr('font-weight', 400)
+    .attr('fill', 'var(--ink)');
+
+  _radialG.selectAll('.lk')
+    .attr('opacity', 0.7)
+    .attr('stroke', 'var(--line)')
+    .attr('stroke-width', 1.2);
 }
 
 // ─── 5. Generation Swimlanes ──────────────────────────────────────────────────
