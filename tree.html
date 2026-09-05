@@ -702,6 +702,17 @@ function esc(s) {
   return d.innerHTML;
 }
 
+function computeAge(p) {
+  const by = parseInt(extractYear(p.birth?.date), 10);
+  if (!by) return null;
+  if (p.death?.date) {
+    const dy = parseInt(extractYear(p.death.date), 10);
+    return dy ? { value: dy - by, atDeath: true } : null;
+  }
+  if (p.death?.deceased) return null; // deceased but no date to compute from
+  return { value: new Date().getFullYear() - by, atDeath: false };
+}
+
 function renderInfoPanel(p) {
   const panel = document.getElementById('info-panel');
   if (!p) { panel.innerHTML = ''; return; }
@@ -729,6 +740,9 @@ function renderInfoPanel(p) {
   const deathParts = [p.death?.date, p.death?.place].filter(Boolean).map(esc);
   let deathHtml = deathParts.length ? deathParts.join(' · ') : (p.death?.deceased ? 'Deceased (no date)' : empty);
 
+  const age = computeAge(p);
+  const ageHtml = age ? `${age.value}${age.atDeath ? ' (at death)' : ''}` : empty;
+
   panel.innerHTML = `
     <div class="info-panel-title">Person Data</div>
     <div class="info-section"><div class="info-label">ID</div><div class="info-row">${esc(p.id)}</div></div>
@@ -736,6 +750,7 @@ function renderInfoPanel(p) {
     <div class="info-section"><div class="info-label">Sex</div><div class="info-row">${esc(p.sex) || empty}</div></div>
     <div class="info-section"><div class="info-label">Birth</div><div class="info-row">${birthHtml}</div></div>
     <div class="info-section"><div class="info-label">Death</div><div class="info-row">${deathHtml}</div></div>
+    <div class="info-section"><div class="info-label">Age</div><div class="info-row">${ageHtml}</div></div>
     <div class="info-section"><div class="info-label">Names (${(p.names||[]).length})</div>${namesHtml}</div>
     <div class="info-section"><div class="info-label">Parents (${(p.parents||[]).length})</div>${relList(p.parents)}</div>
     <div class="info-section"><div class="info-label">Spouses (${(p.spouses||[]).length})</div>${relList(p.spouses)}</div>
