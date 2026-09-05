@@ -392,7 +392,7 @@ function renderCollapsible() {
 
   const treeLayout = d3.tree().nodeSize([NW + 14, NH + 60]);
 
-  function update() {
+  function update(shouldFit) {
     treeLayout(root);
     g.selectAll('*').remove();
 
@@ -437,10 +437,11 @@ function renderCollapsible() {
       .attr('font-size', 14).attr('fill','var(--accent2)').attr('text-anchor','middle')
       .text(d => d._children ? '▸' : '▾');
 
-    // Fit on first render
-    if (!zoomStates['collapsible']) {
+    // Fit whenever this is a fresh render (new root or switching back to this
+    // view) — but not on an expand/collapse click, which should preserve
+    // whatever pan/zoom the user already has.
+    if (shouldFit) {
       const allNodes = root.descendants();
-      const xs = allNodes.map(n=>n.x), ys = allNodes.map(n=>n.y);
       applyFit(svgEl, g, zoom, allNodes.map(n=>({x:n.x-NW/2, y:n.y})), NW, NH);
     }
   }
@@ -449,7 +450,7 @@ function renderCollapsible() {
     const allNodes = root.descendants();
     applyFit(svgEl, g, zoom, allNodes.map(n=>({x:n.x-NW/2, y:n.y})), NW, NH);
   };
-  update();
+  update(true);
 }
 
 // ─── 3. Surname tree ──────────────────────────────────────────────────────────
