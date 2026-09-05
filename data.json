@@ -46,12 +46,13 @@
         "given": "John Chemmarappallil",
         "surn": "Punnen",
         "_type": "birth",
-        "clan": "Chemmarappallil"
+        "clan": "Chemmarappallil",
+        "suffix": "Pappachen"
       },
       {
         "given": "Pappachen",
         "surn": "",
-        "_type": "other"
+        "_type": "nick"
       }
     ],
     "parents": [
@@ -228,7 +229,13 @@
         "given": "Nithya Rahel",
         "surn": "John",
         "_type": "birth",
-        "clan": "Rahel"
+        "clan": "Rahel",
+        "suffix": "B.Arch/Ph.D.Phil"
+      },
+      {
+        "given": "B.Arch/Ph.D.Phil",
+        "surn": "",
+        "_type": "title"
       }
     ],
     "parents": [
@@ -3906,7 +3913,7 @@
   },
   {
     "id": "@I36897312@",
-    "display_name": "Donald Moore",
+    "display_name": "Donald Moore IV",
     "clan": null,
     "sex": "M",
     "birth": {
@@ -3918,7 +3925,8 @@
       {
         "given": "Donald",
         "surn": "Moore",
-        "_type": "birth"
+        "_type": "birth",
+        "suffix": "IV"
       },
       {
         "given": "DJ",
@@ -3929,7 +3937,7 @@
     "parents": [
       {
         "id": "@I91975490@",
-        "name": "Donald Moore"
+        "name": "Donald Moore III"
       },
       {
         "id": "@I88872494@",
@@ -3953,7 +3961,13 @@
       {
         "given": "Paranjit",
         "surn": "Joshi",
-        "_type": "birth"
+        "_type": "birth",
+        "suffix": "M.D."
+      },
+      {
+        "given": "M.D.",
+        "surn": "",
+        "_type": "title"
       },
       {
         "given": "",
@@ -4324,12 +4338,12 @@
     "children": [
       {
         "id": "@I45725392@",
-        "name": "Aranya Nash",
+        "name": "Aranya Atwood Nash",
         "family_id": "@F60964448@"
       },
       {
         "id": "@I29591246@",
-        "name": "Karuna Nash",
+        "name": "Karuna Drakely Nash",
         "family_id": "@F60964448@"
       }
     ],
@@ -4393,7 +4407,13 @@
       {
         "given": "Prayaag",
         "surn": "Akbar",
-        "_type": "birth"
+        "_type": "birth",
+        "suffix": "M.A."
+      },
+      {
+        "given": "M.A.",
+        "surn": "",
+        "_type": "title"
       }
     ],
     "parents": [
@@ -4610,14 +4630,14 @@
     "spouses": [
       {
         "id": "@I91975490@",
-        "name": "Donald Moore",
+        "name": "Donald Moore III",
         "family_id": "@F3717707@"
       }
     ],
     "children": [
       {
         "id": "@I36897312@",
-        "name": "Donald Moore",
+        "name": "Donald Moore IV",
         "family_id": "@F3717707@"
       }
     ],
@@ -6021,7 +6041,8 @@
         "given": "Thuruthel Kurien",
         "surn": "Chacko",
         "_type": "birth",
-        "clan": "Kurien"
+        "clan": "Kurien",
+        "suffix": "Unni"
       },
       {
         "given": "Unni",
@@ -6923,7 +6944,7 @@
   },
   {
     "id": "@I91975490@",
-    "display_name": "Donald Moore",
+    "display_name": "Donald Moore III",
     "clan": null,
     "sex": "M",
     "birth": {
@@ -6934,7 +6955,8 @@
       {
         "given": "Donald",
         "surn": "Moore",
-        "_type": "birth"
+        "_type": "birth",
+        "suffix": "III"
       }
     ],
     "parents": [],
@@ -6948,7 +6970,7 @@
     "children": [
       {
         "id": "@I36897312@",
-        "name": "Donald Moore",
+        "name": "Donald Moore IV",
         "family_id": "@F3717707@"
       }
     ],
@@ -7792,7 +7814,13 @@
         "given": "Mallika Elizabeth",
         "surn": "John",
         "_type": "birth",
-        "clan": "Elizabeth"
+        "clan": "Elizabeth",
+        "suffix": "Psy D"
+      },
+      {
+        "given": "Psy D",
+        "surn": "",
+        "_type": "title"
       },
       {
         "given": "",
@@ -9739,6 +9767,11 @@
         "given": "Cherian",
         "surn": "Mathai",
         "_type": "birth"
+      },
+      {
+        "given": "Anyan",
+        "surn": "",
+        "_type": "nick"
       }
     ],
     "parents": [
@@ -10784,7 +10817,13 @@
       {
         "given": "Elizabeth",
         "surn": "Cherian",
-        "_type": "birth"
+        "_type": "birth",
+        "suffix": "M.A."
+      },
+      {
+        "given": "M.A.",
+        "surn": "",
+        "_type": "title"
       }
     ],
     "parents": [
@@ -11044,7 +11083,7 @@
   },
   {
     "id": "@I29591246@",
-    "display_name": "Karuna Nash",
+    "display_name": "Karuna Drakely Nash",
     "clan": null,
     "sex": "F",
     "birth": {
@@ -11053,7 +11092,7 @@
     "death": {},
     "names": [
       {
-        "given": "Karuna",
+        "given": "Karuna Drakely",
         "surn": "Nash",
         "_type": "birth"
       }
@@ -11418,7 +11457,7 @@
   },
   {
     "id": "@I45725392@",
-    "display_name": "Aranya Nash",
+    "display_name": "Aranya Atwood Nash",
     "clan": null,
     "sex": "F",
     "birth": {
@@ -11427,7 +11466,7 @@
     "death": {},
     "names": [
       {
-        "given": "Aranya",
+        "given": "Aranya Atwood",
         "surn": "Nash",
         "_type": "birth"
       }
@@ -14155,7 +14194,13 @@
         "given": "Mukulika Rahel",
         "surn": "Akbar",
         "_type": "birth",
-        "clan": "Rahel"
+        "clan": "Rahel",
+        "suffix": "M.A/Ll.M"
+      },
+      {
+        "given": "M.A/Ll.M",
+        "surn": "",
+        "_type": "title"
       }
     ],
     "parents": [
@@ -15522,12 +15567,12 @@
     "children": [
       {
         "id": "@I45725392@",
-        "name": "Aranya Nash",
+        "name": "Aranya Atwood Nash",
         "family_id": "@F60964448@"
       },
       {
         "id": "@I29591246@",
-        "name": "Karuna Nash",
+        "name": "Karuna Drakely Nash",
         "family_id": "@F60964448@"
       }
     ],
