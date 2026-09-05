@@ -264,20 +264,26 @@
   },
   {
     "id": "@I92969539@",
-    "display_name": "",
+    "display_name": "Mother of Anna Kuruvilla",
     "clan": null,
     "sex": "F",
     "birth": {},
     "death": {},
     "names": [
       {
-        "given": "",
+        "given": "Mother of Anna Kuruvilla",
         "surn": "",
         "_type": "birth"
       }
     ],
     "parents": [],
-    "spouses": [],
+    "spouses": [
+      {
+        "id": "@I36620977@",
+        "name": "Father of Anna Kuruvilla",
+        "family_id": "@F8734136@"
+      }
+    ],
     "children": [
       {
         "id": "@I6637504@",
@@ -7631,8 +7637,12 @@
     ],
     "parents": [
       {
+        "id": "@I36620977@",
+        "name": "Father of Anna Kuruvilla"
+      },
+      {
         "id": "@I92969539@",
-        "name": ""
+        "name": "Mother of Anna Kuruvilla"
       }
     ],
     "spouses": [
@@ -15824,6 +15834,37 @@
     ],
     "spouses": [],
     "children": [],
+    "notes": []
+  },
+  {
+    "id": "@I36620977@",
+    "display_name": "Father of Anna Kuruvilla",
+    "clan": null,
+    "sex": "M",
+    "birth": {},
+    "death": {},
+    "names": [
+      {
+        "given": "Father of Anna Kuruvilla",
+        "surn": "",
+        "_type": "birth"
+      }
+    ],
+    "parents": [],
+    "spouses": [
+      {
+        "id": "@I92969539@",
+        "name": "Mother of Anna Kuruvilla",
+        "family_id": "@F8734136@"
+      }
+    ],
+    "children": [
+      {
+        "id": "@I6637504@",
+        "name": "Anna Kuruvilla",
+        "family_id": "@F8734136@"
+      }
+    ],
     "notes": []
   }
 ]
