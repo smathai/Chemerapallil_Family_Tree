@@ -148,25 +148,6 @@
     "notes": []
   },
   {
-    "id": "@I36456622@",
-    "display_name": "Verghese",
-    "clan": null,
-    "sex": "M",
-    "birth": {},
-    "death": {},
-    "names": [
-      {
-        "given": "",
-        "surn": "Verghese",
-        "_type": "birth"
-      }
-    ],
-    "parents": [],
-    "spouses": [],
-    "children": [],
-    "notes": []
-  },
-  {
     "id": "@I56851344@",
     "display_name": "Ayesha Elizabeth Prasad",
     "clan": "Elizabeth",
@@ -809,27 +790,6 @@
         "family_id": "@F65699176@"
       }
     ],
-    "notes": []
-  },
-  {
-    "id": "@I41770382@",
-    "display_name": "Michelle Mathai",
-    "clan": null,
-    "sex": "F",
-    "birth": {
-      "date": "2/7/1990"
-    },
-    "death": {},
-    "names": [
-      {
-        "given": "Michelle",
-        "surn": "Mathai",
-        "_type": "birth"
-      }
-    ],
-    "parents": [],
-    "spouses": [],
-    "children": [],
     "notes": []
   },
   {
@@ -6576,25 +6536,6 @@
     "notes": []
   },
   {
-    "id": "@I5977070@",
-    "display_name": "Abraham",
-    "clan": null,
-    "sex": "M",
-    "birth": {},
-    "death": {},
-    "names": [
-      {
-        "given": "",
-        "surn": "Abraham",
-        "_type": "birth"
-      }
-    ],
-    "parents": [],
-    "spouses": [],
-    "children": [],
-    "notes": []
-  },
-  {
     "id": "@I74269436@",
     "display_name": "Mohan",
     "clan": null,
@@ -9447,25 +9388,6 @@
     "notes": []
   },
   {
-    "id": "@I44684828@",
-    "display_name": "Abraham",
-    "clan": null,
-    "sex": "F",
-    "birth": {},
-    "death": {},
-    "names": [
-      {
-        "given": "",
-        "surn": "Abraham",
-        "_type": "birth"
-      }
-    ],
-    "parents": [],
-    "spouses": [],
-    "children": [],
-    "notes": []
-  },
-  {
     "id": "@I928394@",
     "display_name": "Lyla Van Niel",
     "clan": "Van",
@@ -11774,25 +11696,6 @@
         "family_id": "@F23925504@"
       }
     ],
-    "notes": []
-  },
-  {
-    "id": "@I27667888@",
-    "display_name": "Abraham",
-    "clan": null,
-    "sex": "F",
-    "birth": {},
-    "death": {},
-    "names": [
-      {
-        "given": "",
-        "surn": "Abraham",
-        "_type": "birth"
-      }
-    ],
-    "parents": [],
-    "spouses": [],
-    "children": [],
     "notes": []
   },
   {
@@ -14357,25 +14260,6 @@
     "notes": []
   },
   {
-    "id": "@I34156518@",
-    "display_name": "Mohan",
-    "clan": null,
-    "sex": "M",
-    "birth": {},
-    "death": {},
-    "names": [
-      {
-        "given": "Mohan",
-        "surn": "",
-        "_type": "birth"
-      }
-    ],
-    "parents": [],
-    "spouses": [],
-    "children": [],
-    "notes": []
-  },
-  {
     "id": "@I8977992@",
     "display_name": "Ammukutty Punnen",
     "clan": null,
@@ -15256,25 +15140,6 @@
         "family_id": "@F16744096@"
       }
     ],
-    "notes": []
-  },
-  {
-    "id": "@I46170653@",
-    "display_name": "",
-    "clan": null,
-    "sex": "U",
-    "birth": {},
-    "death": {},
-    "names": [
-      {
-        "given": "",
-        "surn": "",
-        "_type": "birth"
-      }
-    ],
-    "parents": [],
-    "spouses": [],
-    "children": [],
     "notes": []
   },
   {
