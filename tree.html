@@ -65,7 +65,7 @@
   .page-header {
     padding: 32px 32px 16px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 16px;
     flex-wrap: wrap;
   }
@@ -74,11 +74,18 @@
     font-size: 1.6rem;
     font-weight: 600;
     flex: 1;
+    padding-top: 8px;
+  }
+
+  .right-col {
+    flex: 0 0 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .search-wrap {
     position: relative;
-    flex: 0 0 280px;
   }
   .search-wrap input {
     width: 100%;
@@ -331,6 +338,56 @@
     color: var(--muted);
     font-size: 12px;
   }
+
+  /* GEDCOM info panel */
+  .info-panel {
+    position: sticky;
+    top: 16px;
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+    font-size: 12.5px;
+  }
+  .info-panel-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--accent);
+  }
+  .info-section { margin-bottom: 12px; }
+  .info-section:last-child { margin-bottom: 0; }
+  .info-label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .info-row {
+    padding: 3px 0;
+    line-height: 1.4;
+    border-bottom: 1px solid var(--bg);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-empty { color: var(--muted); font-style: italic; }
+  .info-tag {
+    font-size: 10px;
+    color: var(--accent);
+    background: var(--hover);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-left: 4px;
+  }
+  .info-id {
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: 4px;
+  }
 </style>
 </head>
 <body>
@@ -346,9 +403,12 @@
 
 <div class="page-header">
   <h1>Family Tree</h1>
-  <div class="search-wrap">
-    <input type="text" id="search-input" placeholder="Search person…" autocomplete="off">
-    <div class="autocomplete-list" id="autocomplete-list"></div>
+  <div class="right-col">
+    <div class="search-wrap">
+      <input type="text" id="search-input" placeholder="Search person…" autocomplete="off">
+      <div class="autocomplete-list" id="autocomplete-list"></div>
+    </div>
+    <div class="info-panel" id="info-panel"></div>
   </div>
 </div>
 
@@ -464,6 +524,7 @@ function render() {
   layout.innerHTML = '';
   const p = ft.byId[currentId];
   if (!p) return;
+  renderInfoPanel(p);
 
   // ── ROW 0/1: Grandparents (2 generations up) + Parents ──────────────────
   if (p.parents.length > 0) {
@@ -613,6 +674,54 @@ function render() {
     });
     layout.appendChild(childRow);
   }
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+
+function renderInfoPanel(p) {
+  const panel = document.getElementById('info-panel');
+  if (!p) { panel.innerHTML = ''; return; }
+
+  const empty = '<span class="info-empty">(none)</span>';
+  const list = (arr, fmtFn) => (arr && arr.length) ? arr.map(fmtFn).join('') : `<div class="info-row">${empty}</div>`;
+
+  const namesHtml = list(p.names, n => {
+    const label = [n.given, n.surn].filter(Boolean).map(esc).join(' ') || '<span class="info-empty">(blank)</span>';
+    const type = n._type ? `<span class="info-tag">${esc(n._type)}</span>` : '';
+    const clan = n.clan ? `<span class="info-tag">clan: ${esc(n.clan)}</span>` : '';
+    return `<div class="info-row">${label}${type}${clan}</div>`;
+  });
+
+  const relList = arr => list(arr, x => {
+    const label = x.name ? esc(x.name) : '<span class="info-empty">(blank)</span>';
+    return `<div class="info-row">${label} <span class="info-id">${esc(x.id)}</span></div>`;
+  });
+
+  const notesHtml = list(p.notes, n => `<div class="info-row">${esc(n)}</div>`);
+
+  const birthParts = [p.birth?.date, p.birth?.place].filter(Boolean).map(esc);
+  const birthHtml = birthParts.length ? birthParts.join(' · ') : empty;
+
+  const deathParts = [p.death?.date, p.death?.place].filter(Boolean).map(esc);
+  let deathHtml = deathParts.length ? deathParts.join(' · ') : (p.death?.deceased ? 'Deceased (no date)' : empty);
+
+  panel.innerHTML = `
+    <div class="info-panel-title">Person Data</div>
+    <div class="info-section"><div class="info-label">ID</div><div class="info-row">${esc(p.id)}</div></div>
+    <div class="info-section"><div class="info-label">Display Name</div><div class="info-row">${esc(p.display_name) || empty}</div></div>
+    <div class="info-section"><div class="info-label">Sex</div><div class="info-row">${esc(p.sex) || empty}</div></div>
+    <div class="info-section"><div class="info-label">Birth</div><div class="info-row">${birthHtml}</div></div>
+    <div class="info-section"><div class="info-label">Death</div><div class="info-row">${deathHtml}</div></div>
+    <div class="info-section"><div class="info-label">Names (${(p.names||[]).length})</div>${namesHtml}</div>
+    <div class="info-section"><div class="info-label">Parents (${(p.parents||[]).length})</div>${relList(p.parents)}</div>
+    <div class="info-section"><div class="info-label">Spouses (${(p.spouses||[]).length})</div>${relList(p.spouses)}</div>
+    <div class="info-section"><div class="info-label">Children (${(p.children||[]).length})</div>${relList(p.children)}</div>
+    <div class="info-section"><div class="info-label">Notes (${(p.notes||[]).length})</div>${notesHtml}</div>
+  `;
 }
 
 function addRowLabel(container, text) {
