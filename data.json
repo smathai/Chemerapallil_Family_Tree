@@ -7187,6 +7187,11 @@
         "id": "@I37092468@",
         "name": "Aleyamma Punnen",
         "family_id": "@F85701@"
+      },
+      {
+        "id": "@I86914720@",
+        "name": "Kuruvilla",
+        "family_id": "@F85701@"
       }
     ],
     "notes": []
@@ -15747,6 +15752,30 @@
         "family_id": "@F8734136@"
       }
     ],
+    "notes": []
+  },
+  {
+    "id": "@I86914720@",
+    "display_name": "Kuruvilla",
+    "clan": null,
+    "sex": "M",
+    "birth": {},
+    "death": {},
+    "names": [
+      {
+        "given": "Kuruvilla",
+        "surn": "",
+        "_type": "birth"
+      }
+    ],
+    "parents": [
+      {
+        "id": "@I51547014@",
+        "name": "Punnen"
+      }
+    ],
+    "spouses": [],
+    "children": [],
     "notes": []
   },
   {
