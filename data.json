@@ -260,7 +260,9 @@
         "family_id": "@F28914919@"
       }
     ],
-    "notes": []
+    "notes": [
+      "B. Arch"
+    ]
   },
   {
     "id": "@I92969539@",
@@ -924,7 +926,9 @@
         "family_id": "@F23990064@"
       }
     ],
-    "notes": []
+    "notes": [
+      "B.A., Journalist, Environmentalist"
+    ]
   },
   {
     "id": "@I55372031@",
@@ -4329,7 +4333,9 @@
         "family_id": "@F60964448@"
       }
     ],
-    "notes": []
+    "notes": [
+      "JD"
+    ]
   },
   {
     "id": "@I8762871@",
@@ -8223,7 +8229,9 @@
         "family_id": "@F28846468@"
       }
     ],
-    "notes": []
+    "notes": [
+      "B.A. LLB, Advocate"
+    ]
   },
   {
     "id": "@I23258963@",
@@ -11100,15 +11108,15 @@
   },
   {
     "id": "@I20737536@",
-    "display_name": "John Henderson Cheyenne",
+    "display_name": "Cheyenne John-Henderson",
     "clan": null,
     "sex": "M",
     "birth": {},
     "death": {},
     "names": [
       {
-        "given": "John Henderson",
-        "surn": "Cheyenne",
+        "given": "Cheyenne",
+        "surn": "John-Henderson",
         "_type": "birth"
       }
     ],
@@ -11123,12 +11131,12 @@
     "children": [
       {
         "id": "@I66690496@",
-        "name": "Raga Lennon Henderson",
+        "name": "Raga Lennon John-Henderson",
         "family_id": "@F64743182@"
       },
       {
         "id": "@I48909049@",
-        "name": "Kavi Neil Cheyenne",
+        "name": "Kavi Neil John-Henderson",
         "family_id": "@F64743182@"
       }
     ],
@@ -12163,7 +12171,9 @@
         "family_id": "@F1263705@"
       }
     ],
-    "notes": []
+    "notes": [
+      "M.D."
+    ]
   },
   {
     "id": "@I36288804@",
@@ -12197,7 +12207,7 @@
   },
   {
     "id": "@I66690496@",
-    "display_name": "Raga Lennon Henderson",
+    "display_name": "Raga Lennon John-Henderson",
     "clan": null,
     "sex": "M",
     "birth": {
@@ -12207,14 +12217,14 @@
     "names": [
       {
         "given": "Raga Lennon",
-        "surn": "Henderson",
+        "surn": "John-Henderson",
         "_type": "birth"
       }
     ],
     "parents": [
       {
         "id": "@I20737536@",
-        "name": "John Henderson Cheyenne"
+        "name": "Cheyenne John-Henderson"
       },
       {
         "id": "@I86794064@",
@@ -12335,19 +12345,19 @@
     "spouses": [
       {
         "id": "@I20737536@",
-        "name": "John Henderson Cheyenne",
+        "name": "Cheyenne John-Henderson",
         "family_id": "@F64743182@"
       }
     ],
     "children": [
       {
         "id": "@I66690496@",
-        "name": "Raga Lennon Henderson",
+        "name": "Raga Lennon John-Henderson",
         "family_id": "@F64743182@"
       },
       {
         "id": "@I48909049@",
-        "name": "Kavi Neil Cheyenne",
+        "name": "Kavi Neil John-Henderson",
         "family_id": "@F64743182@"
       }
     ],
@@ -12658,7 +12668,9 @@
         "family_id": "@F51435952@"
       }
     ],
-    "notes": []
+    "notes": [
+      "PhD Sociology"
+    ]
   },
   {
     "id": "@I48237131@",
@@ -13086,7 +13098,9 @@
         "family_id": "@F59432897@"
       }
     ],
-    "notes": []
+    "notes": [
+      "Rev., Malpan of the Church, Priest"
+    ]
   },
   {
     "id": "@I57447607@",
@@ -14652,7 +14666,7 @@
   },
   {
     "id": "@I48909049@",
-    "display_name": "Kavi Neil Cheyenne",
+    "display_name": "Kavi Neil John-Henderson",
     "clan": null,
     "sex": "M",
     "birth": {
@@ -14662,14 +14676,14 @@
     "names": [
       {
         "given": "Kavi Neil",
-        "surn": "Cheyenne",
+        "surn": "John-Henderson",
         "_type": "birth"
       }
     ],
     "parents": [
       {
         "id": "@I20737536@",
-        "name": "John Henderson Cheyenne"
+        "name": "Cheyenne John-Henderson"
       },
       {
         "id": "@I86794064@",
@@ -15509,7 +15523,9 @@
         "family_id": "@F60964448@"
       }
     ],
-    "notes": []
+    "notes": [
+      "PhD History"
+    ]
   },
   {
     "id": "@I64899288@",
