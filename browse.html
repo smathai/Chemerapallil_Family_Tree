@@ -30,9 +30,6 @@
   .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
   .search-bar input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 15px; background: var(--card); font-family: 'Jost', sans-serif; }
   .search-bar input:focus { outline: none; border-color: var(--accent2); }
-  .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-  .chip { padding: 4px 12px; border-radius: 20px; border: 1.5px solid var(--border); cursor: pointer; font-size: 13px; color: var(--muted); background: var(--card); }
-  .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .count-label { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
 
   .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
@@ -42,7 +39,6 @@
   .person-card .name.female { color: var(--female); }
   .person-card .name.male { color: var(--male); }
   .person-card .meta { font-size: 12px; color: var(--muted); }
-  .clan-badge { display: inline-block; margin-top: 5px; padding: 2px 8px; background: #f0e8df; border-radius: 12px; font-size: 11px; color: var(--accent); }
 
   /* Profile overlay */
   #profile-overlay { display: none; }
@@ -128,7 +124,6 @@
   <div class="search-bar">
     <input type="text" id="search-input" placeholder="Search by name…" autocomplete="off">
   </div>
-  <div class="filter-chips" id="filter-chips"></div>
   <div class="count-label" id="result-count"></div>
   <div class="results" id="results-grid"></div>
   <div class="empty-state" id="empty-state" style="display:none">No results found.</div>
@@ -143,14 +138,12 @@
 
 <script src="js/relationships.js"></script>
 <script>
-let allPeople = [], ft = null, activeFilter = null, lastSearch = "", profileStack = [];
-const REAL_CLANS = new Set(['Chemmarappallil','Kalappurackal','Ennasseril','Puthettu','Pariat','Kurien','Lindquist','Van Neil']);
+let allPeople = [], ft = null, lastSearch = "", profileStack = [];
 
 async function init() {
   allPeople = await fetch("data.json").then(r => r.json());
   ft = new FamilyTree(allPeople);
   document.getElementById("header-stats").textContent = `${allPeople.length} people`;
-  buildFilterChips();
   renderResults(allPeople);
   document.getElementById("search-input").addEventListener("input", e => { lastSearch = e.target.value; applyFilters(); });
   document.getElementById("back-btn").addEventListener("click", () => {
@@ -160,27 +153,10 @@ async function init() {
   });
 }
 
-function buildFilterChips() {
-  const clans = [...new Set(allPeople.map(p => p.clan).filter(c => c && REAL_CLANS.has(c)))].sort();
-  const container = document.getElementById("filter-chips");
-  clans.forEach(clan => {
-    const chip = document.createElement("div");
-    chip.className = "chip";
-    chip.textContent = clan;
-    chip.addEventListener("click", () => {
-      if (activeFilter === clan) { activeFilter = null; chip.classList.remove("active"); }
-      else { document.querySelectorAll(".chip").forEach(c => c.classList.remove("active")); activeFilter = clan; chip.classList.add("active"); }
-      applyFilters();
-    });
-    container.appendChild(chip);
-  });
-}
-
 function applyFilters() {
   const q = lastSearch.toLowerCase().trim();
   let filtered = allPeople;
   if (q) filtered = filtered.filter(p => p.names.map(n => `${n.given} ${n.surn}`.toLowerCase()).join(" ").includes(q) || (p.clan||"").toLowerCase().includes(q));
-  if (activeFilter) filtered = filtered.filter(p => p.clan === activeFilter);
   renderResults(filtered);
 }
 
@@ -262,8 +238,7 @@ function renderResults(people) {
     const sc = p.sex === "F" ? "female" : p.sex === "M" ? "male" : "";
     const by = extractYear(p.birth?.date), dy = p.death?.date ? extractYear(p.death.date) : (p.death?.deceased ? "†" : "");
     const years = by ? `${by}${dy ? " – " + dy : ""}` : "";
-    const showClan = p.clan && REAL_CLANS.has(p.clan);
-    card.innerHTML = `<div class="name ${sc}">${p.display_name||"Unknown"}</div><div class="meta">${years}</div>${showClan ? `<span class="clan-badge">${p.clan}</span>` : ""}`;
+    card.innerHTML = `<div class="name ${sc}">${p.display_name||"Unknown"}</div><div class="meta">${years}</div>`;
     card.addEventListener("click", () => showProfile(p.id));
     grid.appendChild(card);
   });
@@ -287,7 +262,6 @@ function showProfile(id, push = true) {
       <div class="avatar ${p.sex}">${sexEmoji}</div>
       <div>
         <div class="profile-name ${sc}">${p.display_name}${p.death?.deceased||p.death?.date?'<span class="deceased-badge">†</span>':""}</div>
-        ${p.clan && REAL_CLANS.has(p.clan) ? `<div style="color:var(--accent2);font-size:13px;margin-top:2px">${p.clan}</div>` : ""}
         <div class="profile-dates">${[by,dy].filter(Boolean).join(" · ")}</div>
       </div>
     </div>
