@@ -209,8 +209,8 @@ async function init() {
   updateBtn();
   if (selectedA && selectedB) {
     calculate();
-    if (params.get("view") === "tree") {
-      setTimeout(() => document.getElementById("btn-tree")?.click(), 50);
+    if (params.get("view") === "linear") {
+      setTimeout(() => document.getElementById("btn-linear")?.click(), 50);
     }
   } else if (selectedB) document.getElementById("a-input").focus();
 }
@@ -298,12 +298,12 @@ function showResult(label, pathNames, rawPath) {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <h3 style="margin:0">Path diagram</h3>
         <div class="view-toggle">
-          <button class="view-btn active" id="btn-linear">Linear</button>
-          <button class="view-btn" id="btn-tree">Tree</button>
+          <button class="view-btn" id="btn-linear">Linear</button>
+          <button class="view-btn active" id="btn-tree">Tree</button>
         </div>
       </div>
-      <div id="view-linear"><div class="path-graph" id="path-graph"></div></div>
-      <div id="view-tree" style="display:none"><div class="tree-svg-wrap" id="tree-svg-wrap"></div></div>
+      <div id="view-linear" style="display:none"><div class="path-graph" id="path-graph"></div></div>
+      <div id="view-tree"><div class="tree-svg-wrap" id="tree-svg-wrap"></div></div>
     </div>
   `;
 
@@ -322,6 +322,7 @@ function showResult(label, pathNames, rawPath) {
       renderTreeView(rawPath, selectedA, selectedB);
     }
   });
+  renderTreeView(rawPath, selectedA, selectedB);
 
   renderPathGraph(rawPath, selectedA, selectedB);
 }
