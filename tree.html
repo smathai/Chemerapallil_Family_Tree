@@ -434,6 +434,18 @@ function makeNode(person, relLabel, isCenter) {
   return el;
 }
 
+function splitParents(person) {
+  if (!person) return { father: null, mother: null, others: [] };
+  const father = person.parents.find(x => ft.byId[x.id]?.sex === 'M');
+  const mother = person.parents.find(x => ft.byId[x.id]?.sex === 'F');
+  const others = person.parents.filter(x => x.id !== father?.id && x.id !== mother?.id);
+  return {
+    father: father ? ft.byId[father.id] : null,
+    mother: mother ? ft.byId[mother.id] : null,
+    others: others.map(x => ft.byId[x.id]).filter(Boolean)
+  };
+}
+
 function makeCoupleRow(p1, p2, p1label, p2label, p1center, p2center) {
   const wrap = document.createElement('div');
   wrap.className = 'couple-row';
@@ -453,31 +465,36 @@ function render() {
   const p = ft.byId[currentId];
   if (!p) return;
 
-  // ── ROW 1: Parents (as couple) ──────────────────────
+  // ── ROW 0/1: Grandparents (2 generations up) + Parents ──────────────────
   if (p.parents.length > 0) {
+    const { father, mother, others: otherParents } = splitParents(p);
+
+    // Paternal grandparents sit above the father, maternal above the
+    // mother — same left/right convention as the Parents row below.
+    const paternal = splitParents(father);
+    const maternal = splitParents(mother);
+    if (paternal.father || paternal.mother || maternal.father || maternal.mother) {
+      addRowLabel(layout, 'Grandparents');
+      const gpRow = document.createElement('div');
+      gpRow.className = 'tree-row';
+      gpRow.style.gap = '40px';
+      if (paternal.father || paternal.mother) {
+        gpRow.appendChild(makeCoupleRow(paternal.father, paternal.mother, 'Grandfather', 'Grandmother', false, false));
+      }
+      if (maternal.father || maternal.mother) {
+        gpRow.appendChild(makeCoupleRow(maternal.father, maternal.mother, 'Grandfather', 'Grandmother', false, false));
+      }
+      layout.appendChild(gpRow);
+      addConnector(layout);
+    }
+
     addRowLabel(layout, 'Parents');
     const parentRow = document.createElement('div');
     parentRow.className = 'tree-row';
-
-    // Group parents into couples via famc family
-    const parentIds = p.parents.map(x => x.id);
-    const father = p.parents.find(x => ft.byId[x.id]?.sex === 'M');
-    const mother = p.parents.find(x => ft.byId[x.id]?.sex === 'F');
-    const otherParents = p.parents.filter(x =>
-      x.id !== father?.id && x.id !== mother?.id
-    );
-
     if (father || mother) {
-      const couple = makeCoupleRow(
-        father ? ft.byId[father.id] : null,
-        mother ? ft.byId[mother.id] : null,
-        'Father', 'Mother', false, false
-      );
-      parentRow.appendChild(couple);
+      parentRow.appendChild(makeCoupleRow(father, mother, 'Father', 'Mother', false, false));
     }
-    otherParents.forEach(px => {
-      parentRow.appendChild(makeNode(ft.byId[px.id], 'Parent', false));
-    });
+    otherParents.forEach(op => parentRow.appendChild(makeNode(op, 'Parent', false)));
 
     layout.appendChild(parentRow);
     addConnector(layout);
