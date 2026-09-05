@@ -655,7 +655,7 @@
     "clan": null,
     "sex": "M",
     "birth": {
-      "date": "11/9/1961"
+      "date": "11/9/1981"
     },
     "death": {},
     "names": [
@@ -850,7 +850,7 @@
     "clan": null,
     "sex": "F",
     "birth": {
-      "date": "5/4/2006"
+      "date": "5/4/2005"
     },
     "death": {},
     "names": [
@@ -880,11 +880,11 @@
     "clan": "Chemmarappallil",
     "sex": "M",
     "birth": {
-      "date": "4/11/1914"
+      "date": "4/12/1911"
     },
     "death": {
       "deceased": true,
-      "date": "4/5/2000",
+      "date": "4/3/2000",
       "place": "Kottayam,,Kerala,India"
     },
     "names": [
@@ -1128,7 +1128,7 @@
   },
   {
     "id": "@I83969239@",
-    "display_name": "Hoa",
+    "display_name": "Hoa Phan",
     "clan": null,
     "sex": "F",
     "birth": {
@@ -1138,7 +1138,7 @@
     "names": [
       {
         "given": "Hoa",
-        "surn": "",
+        "surn": "Phan",
         "_type": "birth"
       },
       {
@@ -1668,7 +1668,7 @@
     },
     "death": {
       "deceased": true,
-      "date": "20 June 2000"
+      "date": "30 June 2000"
     },
     "names": [
       {
@@ -1710,7 +1710,7 @@
     "clan": null,
     "sex": "M",
     "birth": {
-      "date": "6/6/1990"
+      "date": "6/8/1990"
     },
     "death": {},
     "names": [
@@ -2836,7 +2836,7 @@
     "clan": null,
     "sex": "F",
     "birth": {
-      "date": "7/28/1966"
+      "date": "7/28/1965"
     },
     "death": {},
     "names": [
@@ -3297,7 +3297,7 @@
     "clan": null,
     "sex": "M",
     "birth": {
-      "date": "10/12/1969"
+      "date": "10/12/1959"
     },
     "death": {},
     "names": [
@@ -3825,7 +3825,7 @@
     "clan": null,
     "sex": "F",
     "birth": {
-      "date": "9/21/2006"
+      "date": "9/21/2005"
     },
     "death": {},
     "names": [
@@ -4004,7 +4004,7 @@
     "clan": null,
     "sex": "M",
     "birth": {
-      "date": "4/18/1988"
+      "date": "4/18/1966"
     },
     "death": {},
     "names": [
@@ -4726,7 +4726,9 @@
     "display_name": "Kayan Ethan Nordenburg",
     "clan": "Ethan",
     "sex": "M",
-    "birth": {},
+    "birth": {
+      "date": "1/11/2015"
+    },
     "death": {},
     "names": [
       {
@@ -6823,7 +6825,7 @@
       },
       {
         "id": "@I83969239@",
-        "name": "Hoa"
+        "name": "Hoa Phan"
       }
     ],
     "spouses": [],
@@ -8173,7 +8175,7 @@
     "clan": null,
     "sex": "M",
     "birth": {
-      "date": "10/16/1918",
+      "date": "10/16/1917",
       "place": "Kottayam,,Kerala,India"
     },
     "death": {
@@ -8732,7 +8734,7 @@
       },
       {
         "id": "@I83969239@",
-        "name": "Hoa"
+        "name": "Hoa Phan"
       }
     ],
     "spouses": [],
@@ -9539,7 +9541,7 @@
     "clan": null,
     "sex": "F",
     "birth": {
-      "date": "11/12/1982"
+      "date": "11/12/1962"
     },
     "death": {},
     "names": [
@@ -10147,7 +10149,9 @@
     "display_name": "Brady Thomas Heiner",
     "clan": "Thomas",
     "sex": "M",
-    "birth": {},
+    "birth": {
+      "date": "10/3/1979"
+    },
     "death": {},
     "names": [
       {
@@ -10189,7 +10193,7 @@
     },
     "death": {
       "deceased": true,
-      "date": "5/9/1956"
+      "date": "5/9/1958"
     },
     "names": [
       {
@@ -10839,7 +10843,9 @@
     "display_name": "Manju Joseph",
     "clan": null,
     "sex": "F",
-    "birth": {},
+    "birth": {
+      "date": "3/3/1978"
+    },
     "death": {},
     "names": [
       {
@@ -11032,7 +11038,7 @@
     "clan": null,
     "sex": "F",
     "birth": {
-      "date": "8/29/2017"
+      "date": "7/29/2017"
     },
     "death": {},
     "names": [
@@ -11508,7 +11514,7 @@
     "spouses": [
       {
         "id": "@I83969239@",
-        "name": "Hoa",
+        "name": "Hoa Phan",
         "family_id": "@F49364926@"
       }
     ],
@@ -12778,7 +12784,7 @@
     "clan": null,
     "sex": "M",
     "birth": {
-      "date": "11/28/1951"
+      "date": "11/26/1951"
     },
     "death": {},
     "names": [
@@ -13201,7 +13207,7 @@
     "clan": null,
     "sex": "M",
     "birth": {
-      "date": "6/21/1967"
+      "date": "6/21/1997"
     },
     "death": {},
     "names": [
@@ -13585,7 +13591,7 @@
     "clan": null,
     "sex": "M",
     "birth": {
-      "date": "4/3/1950"
+      "date": "4/3/1959"
     },
     "death": {},
     "names": [
@@ -14253,11 +14259,11 @@
     "clan": null,
     "sex": "F",
     "birth": {
-      "date": "3/6/1908"
+      "date": "3/16/1908"
     },
     "death": {
       "deceased": true,
-      "date": "9/15/1995"
+      "date": "9/14/1995"
     },
     "names": [
       {
