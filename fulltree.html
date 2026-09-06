@@ -396,9 +396,16 @@ function renderCollapsible() {
     treeLayout(root);
     g.selectAll('*').remove();
 
-    // Links
+    // Links — anchored to the bottom-center of the parent box and the
+    // top-center of the child box (node.x is already box-center; node.y is
+    // the box's top edge), with a smooth vertical S-curve between them.
     g.selectAll('.lk').data(root.links()).join('path').attr('class','lk')
-      .attr('d', d3.linkVertical().x(d=>d.x).y(d=>d.y))
+      .attr('d', d => {
+        const sx = d.source.x, sy = d.source.y + NH;
+        const tx = d.target.x, ty = d.target.y;
+        const midY = (sy + ty) / 2;
+        return `M${sx},${sy}C${sx},${midY} ${tx},${midY} ${tx},${ty}`;
+      })
       .attr('fill','none').attr('stroke','var(--line)').attr('stroke-width',1.5);
 
     // Nodes
@@ -967,7 +974,7 @@ function renderSwim() {
   if (unknown.length) {
     const row = document.createElement('div');
     row.className = 'swim-decade';
-    const lbl = document.createElement('div'); lbl.className = 'swim-label'; lbl.textContent = '?';
+    const lbl = document.createElement('div'); lbl.className = 'swim-label'; lbl.style.width = '110px'; lbl.textContent = 'Unknown birth dates';
     row.appendChild(lbl);
     const track = document.createElement('div'); track.className = 'swim-track';
     unknown.forEach(p => {
