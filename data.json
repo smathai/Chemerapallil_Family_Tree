@@ -508,7 +508,7 @@
       },
       {
         "id": "@I40753728@",
-        "name": "Rana Punnen",
+        "name": "Rana Punnen Thomas",
         "family_id": "@F71853604@"
       }
     ],
@@ -4032,7 +4032,7 @@
   },
   {
     "id": "@I40753728@",
-    "display_name": "Rana Punnen",
+    "display_name": "Rana Punnen Thomas",
     "clan": null,
     "sex": "M",
     "birth": {
@@ -4041,8 +4041,8 @@
     "death": {},
     "names": [
       {
-        "given": "Rana",
-        "surn": "Punnen",
+        "given": "Rana Punnen",
+        "surn": "Thomas",
         "_type": "birth"
       }
     ],
@@ -13295,7 +13295,7 @@
       },
       {
         "id": "@I40753728@",
-        "name": "Rana Punnen",
+        "name": "Rana Punnen Thomas",
         "family_id": "@F71853604@"
       }
     ],
