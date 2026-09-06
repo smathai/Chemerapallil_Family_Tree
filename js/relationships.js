@@ -66,27 +66,24 @@ class FamilyTree {
       return "Spouse";
     }
 
-    // A path ending in "spouse" means the target has no blood connection
-    // of their own -- they're just married to whoever the rest of the path
-    // actually reaches (this is how anyone with no recorded parents shows
-    // up at all). Describe the blood relationship to that person instead,
-    // then note the marriage, rather than mislabeling the spouse with their
-    // partner's own blood relationship.
-    if (steps.length > 1 && steps[steps.length - 1] === "spouse") {
-      const bloodPath = path.slice(0, -1);
-      const bloodToId = bloodPath[bloodPath.length - 1].id;
-      const bloodLabel = this.describeRelationship(fromId, bloodToId);
+    // A leading and/or trailing "spouse" hop means FROM and/or TO have no
+    // blood connection of their own -- they're just married to whoever the
+    // rest of the path actually reaches (this is how anyone with no
+    // recorded parents shows up at all). Peel off up to one spouse hop from
+    // each end, describe the blood relationship underneath, and note the
+    // marriage with a single "'s spouse" suffix. Crossing into "related by
+    // marriage" only needs to be said once, even when BOTH ends of the path
+    // are married-in (e.g. two people whose respective spouses are blood
+    // relatives of each other) -- suffixing once per end would compound
+    // into a nonsensical "...'s spouse's spouse".
+    const hasLead = steps.length > 1 && steps[0] === "spouse";
+    const hasTrail = steps.length > 1 && steps[steps.length - 1] === "spouse";
+    if (hasLead || hasTrail) {
+      const bloodFromId = hasLead ? path[0].id : fromId;
+      const bloodToId = hasTrail ? path[path.length - 2].id : toId;
+      if (bloodFromId === bloodToId) return "Spouse's spouse";
+      const bloodLabel = this.describeRelationship(bloodFromId, bloodToId);
       return `${bloodLabel}'s spouse`;
-    }
-
-    // Symmetric case: FROM has no blood connection of their own either --
-    // they're just married to whoever the rest of the path actually starts
-    // from. By the usual "in-law" convention, FROM shares that person's own
-    // relationship to TO (extended by marriage), so reuse the same label
-    // rather than compounding a second "spouse of" on top of it.
-    if (steps.length > 1 && steps[0] === "spouse") {
-      const bloodFromId = path[0].id;
-      return this.describeRelationship(bloodFromId, toId);
     }
 
     // Handle direct parent/child. steps[0] === "parent" means TO is FROM's
