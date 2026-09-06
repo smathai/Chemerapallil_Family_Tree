@@ -71,6 +71,15 @@
     padding: 20px 24px; margin-bottom: 24px;
   }
   .result-label { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
+
+  .reverse-btn {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 14px;
+    padding: 7px 16px; background: var(--card); color: var(--accent);
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    cursor: pointer; font-size: 12px; font-weight: 600; font-family: 'Jost', sans-serif;
+    text-transform: uppercase; letter-spacing: 0.06em; transition: border-color 0.2s, color 0.2s;
+  }
+  .reverse-btn:hover { border-color: var(--accent); color: var(--accent2); }
   .result-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
   .path-text { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.8; }
   .path-text .path-name { color: var(--text); font-weight: 500; }
@@ -224,6 +233,17 @@ function updateBtn() {
   document.getElementById("find-btn").disabled = !(selectedA && selectedB);
 }
 
+// Keep the Person A / Person B inputs showing whoever is currently
+// selected -- used after swapping the two via the Reverse button.
+function syncSelectedInputs() {
+  [["a-input", "a-hint", selectedA], ["b-input", "b-hint", selectedB]].forEach(([inputId, hintId, id]) => {
+    const p = ft.byId[id];
+    document.getElementById(inputId).value = p?.display_name || "";
+    document.getElementById(inputId).classList.toggle("selected", !!p);
+    document.getElementById(hintId).textContent = p?.display_name || "";
+  });
+}
+
 function extractYear(d) { if (!d) return ""; const m = (d+"").match(/\b(1[0-9]{3}|20[0-9]{2})\b/); return m ? m[1] : ""; }
 
 function setupAC(inputId, listId, hintId, onSelect) {
@@ -295,6 +315,7 @@ function showResult(label, pathNames, rawPath) {
   const intermediates = pathNames ? Math.max(0, pathNames.length - 2) : 0;
   area.innerHTML = `
     <div class="result-summary">
+      <button class="reverse-btn" id="reverse-btn">⇄ Reverse relationship</button>
       <div class="result-label">${aName} is the <em>${label}</em> of ${bName}</div>
       <div class="result-desc">${intermediates > 0 ? `Connected through ${intermediates} intermediate ${intermediates === 1 ? "person" : "people"}.` : ""}</div>
       ${pathTextHtml}
@@ -311,6 +332,12 @@ function showResult(label, pathNames, rawPath) {
       <div id="view-tree"><div class="tree-svg-wrap" id="tree-svg-wrap"></div></div>
     </div>
   `;
+
+  document.getElementById("reverse-btn").addEventListener("click", () => {
+    [selectedA, selectedB] = [selectedB, selectedA];
+    syncSelectedInputs();
+    calculate();
+  });
 
   document.getElementById("btn-linear").addEventListener("click", () => {
     document.getElementById("btn-linear").classList.add("active");
