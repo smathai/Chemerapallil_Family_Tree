@@ -220,6 +220,7 @@
 // ─── Data & state ───────────────────────────────────────────────────────────
 let ALL = [], BYID = {}, ROOTS_META = [], PERSON_ROOT = {}, currentRoot = null, currentView = 'collapsible';
 let highlightId = null; // person to highlight in radial view
+let collapsibleFocusId = null; // person whose ancestor line to trace in collapsible view
 
 const zoomStates = {}; // per-view zoom transform
 
@@ -248,7 +249,7 @@ async function init() {
   currentRoot = ROOTS_META[0].id;
   sel.value = currentRoot;
   sel.addEventListener('change', () => {
-    currentRoot = sel.value; highlightId = null;
+    currentRoot = sel.value; highlightId = null; collapsibleFocusId = null;
     document.getElementById('search-input').value = '';
     renderCurrent();
   });
@@ -309,7 +310,7 @@ async function init() {
 }
 
 function renderCurrent() {
-  if (currentView === 'collapsible') renderCollapsible();
+  if (currentView === 'collapsible') renderCollapsible(collapsibleFocusId);
   else if (currentView === 'surname') renderSurname();
   else if (currentView === 'radial') renderRadial();
   else if (currentView === 'swim') renderSwim();
@@ -373,7 +374,42 @@ function buildHierarchy(rootId) {
   return rec(rootId);
 }
 
-function renderCollapsible() {
+// Find the chain of ids from a buildHierarchy() root down to targetId,
+// walking the raw (pre-d3, pre-collapse) nested object so it always sees
+// every child regardless of any collapsed-state bookkeeping.
+function findHierarchyPath(node, targetId) {
+  if (!node) return null;
+  if (node.id === targetId) return [node.id];
+  for (const c of node.children || []) {
+    const sub = findHierarchyPath(c, targetId);
+    if (sub) return [node.id, ...sub];
+  }
+  return null;
+}
+
+// Switch to whichever root reaches personId (if the current one doesn't)
+// and render the Collapsible view tracing that person's direct ancestor
+// line back to the root, with full siblings visible at every generation
+// along the way but everything off that line collapsed to a single box.
+function focusCollapsibleOn(personId) {
+  let path = findHierarchyPath(buildHierarchy(currentRoot), personId);
+  if (!path) {
+    const bestRoot = PERSON_ROOT[personId];
+    if (bestRoot) {
+      currentRoot = bestRoot;
+      document.getElementById('root-select').value = bestRoot;
+      path = findHierarchyPath(buildHierarchy(currentRoot), personId);
+    }
+  }
+  if (!path) {
+    window.location.href = `tree.html?id=${encodeURIComponent(personId)}`;
+    return;
+  }
+  collapsibleFocusId = personId;
+  renderCollapsible(personId);
+}
+
+function renderCollapsible(focusId) {
   const svgEl = document.getElementById('svg-collapsible');
   const svg = d3.select(svgEl);
   svg.selectAll('*').remove();
@@ -381,14 +417,44 @@ function renderCollapsible() {
   const zoom = makeZoom(svgEl, g, 'collapsible');
   _zoomRef = zoom;
 
+  // Clicking empty canvas drops an active ancestor-line focus and returns
+  // to the normal depth-collapsed full view.
+  svg.on('click', () => {
+    if (collapsibleFocusId) {
+      collapsibleFocusId = null;
+      document.getElementById('search-input').value = '';
+      renderCollapsible();
+    }
+  });
+
   const W = svgEl.clientWidth, H = svgEl.clientHeight;
   const NW = 150, NH = 50;
 
   const root = d3.hierarchy(buildHierarchy(currentRoot));
-  // Collapse nodes with > 20 total descendants to start
-  root.descendants().forEach(d => {
-    if (d.depth > 2 && d.children) { d._children = d.children; d.children = null; }
-  });
+
+  const ancestorPath = focusId ? findHierarchyPath(buildHierarchy(currentRoot), focusId) : null;
+  if (ancestorPath) {
+    const ancestorSet = new Set(ancestorPath);
+    root.descendants().forEach(d => {
+      if (!d.children) return;
+      if (ancestorSet.has(d.data.id)) {
+        // On the direct line -- keep expanded so its full sibling set
+        // shows, except the focus person itself, which falls back to the
+        // normal depth-based rule so an unrelated huge subtree below them
+        // doesn't dump out unprompted.
+        if (d.data.id === focusId && d.depth > 2) { d._children = d.children; d.children = null; }
+        return;
+      }
+      // Off the line -- a sibling branch (or anything beneath one).
+      // Collapsing it here hides its whole subtree in one step.
+      d._children = d.children; d.children = null;
+    });
+  } else {
+    // Collapse nodes with > 20 total descendants to start
+    root.descendants().forEach(d => {
+      if (d.depth > 2 && d.children) { d._children = d.children; d.children = null; }
+    });
+  }
 
   const treeLayout = d3.tree().nodeSize([NW + 14, NH + 60]);
 
@@ -413,6 +479,7 @@ function renderCollapsible() {
       .attr('transform', d=>`translate(${d.x - NW/2},${d.y})`)
       .style('cursor','pointer')
       .on('click', (e,d) => {
+        e.stopPropagation();
         if (d._children) { d.children = d._children; d._children = null; }
         else if (d.children) { d._children = d.children; d.children = null; }
         update();
@@ -1031,6 +1098,8 @@ function setupSearch() {
               window.location.href = `tree.html?id=${encodeURIComponent(p.id)}`;
             }
           }
+        } else if (currentView === 'collapsible') {
+          focusCollapsibleOn(p.id);
         } else {
           // On other views, navigate to focused tree page
           window.location.href = `tree.html?id=${encodeURIComponent(p.id)}`;
