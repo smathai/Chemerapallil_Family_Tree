@@ -66,24 +66,60 @@ class FamilyTree {
       return "Spouse";
     }
 
-    // A leading and/or trailing "spouse" hop means FROM and/or TO have no
-    // blood connection of their own -- they're just married to whoever the
-    // rest of the path actually reaches (this is how anyone with no
-    // recorded parents shows up at all). Peel off up to one spouse hop from
-    // each end, describe the blood relationship underneath, and note the
-    // marriage with a single "'s spouse" suffix. Crossing into "related by
-    // marriage" only needs to be said once, even when BOTH ends of the path
-    // are married-in (e.g. two people whose respective spouses are blood
-    // relatives of each other) -- suffixing once per end would compound
-    // into a nonsensical "...'s spouse's spouse".
-    const hasLead = steps.length > 1 && steps[0] === "spouse";
-    const hasTrail = steps.length > 1 && steps[steps.length - 1] === "spouse";
-    if (hasLead || hasTrail) {
-      const bloodFromId = hasLead ? path[0].id : fromId;
-      const bloodToId = hasTrail ? path[path.length - 2].id : toId;
-      if (bloodFromId === bloodToId) return "Spouse's spouse";
-      const bloodLabel = this.describeRelationship(bloodFromId, bloodToId);
-      return `${bloodLabel}'s spouse`;
+    // Any "spouse" hop (leading, trailing, or in the middle) means the path
+    // crosses a marriage somewhere -- FROM and/or TO reach their common
+    // connection only by marriage there, not blood. Each such crossing is
+    // described using the term the OTHER blood side actually uses for the
+    // spouse's own relative, suffixed with "'s spouse" -- e.g. "my uncle's
+    // wife" is built from "the term I use for my uncle" (not "the term my
+    // uncle uses for me", which is the asymmetric-opposite word for
+    // relations like aunt/uncle vs niece/nephew). Getting this argument
+    // order backwards is exactly the bug this replaced: it produced
+    // "Niece/Nephew's spouse" for someone's own aunt-by-marriage.
+    const spouseIdxs = [];
+    steps.forEach((s, i) => { if (s === "spouse") spouseIdxs.push(i); });
+
+    if (spouseIdxs.length > 0) {
+      const first = spouseIdxs[0], last = spouseIdxs[spouseIdxs.length - 1];
+
+      if (first === last) {
+        if (first === 0) {
+          // FROM is married-in; TO is reached via a pure blood chain from
+          // FROM's spouse. Borrow that spouse's own term for TO as-is.
+          const anchor = path[0].id;
+          const bloodLabel = this.describeRelationship(anchor, toId);
+          return `${bloodLabel}'s spouse`;
+        }
+        if (first === steps.length - 1) {
+          // TO is married-in; FROM reaches TO's spouse via a pure blood
+          // chain. Use FROM's own term for that spouse (the anchor), not
+          // the anchor's term for FROM -- they're asymmetric in general.
+          const anchor = path[first - 1].id;
+          const bloodLabel = this.describeRelationship(anchor, fromId);
+          return `${bloodLabel}'s spouse`;
+        }
+        // Interior: FROM and TO each have their own real blood connection,
+        // bridged by one couple's marriage in between (e.g. FROM's uncle
+        // married TO's aunt). Compose both halves around the bridge.
+        const leftAnchor = path[first - 1].id;
+        const rightAnchor = path[first].id;
+        const rightLabel = this.describeRelationship(rightAnchor, toId);
+        const leftLabel = this.describeRelationship(fromId, leftAnchor);
+        return `${rightLabel}'s spouse's ${leftLabel}`;
+      }
+
+      if (spouseIdxs.length === 2 && first === 0 && last === steps.length - 1) {
+        // Both FROM and TO are married-in, with one blood relationship
+        // bridging their two respective spouses.
+        const leftAnchor = path[0].id;
+        const rightAnchor = path[last - 1].id;
+        const bloodLabel = this.describeRelationship(rightAnchor, leftAnchor);
+        return `${bloodLabel}'s spouse`;
+      }
+
+      // More exotic chains (multiple marriage bridges) -- not worth
+      // guessing at a compound phrase nobody would recognize anyway.
+      return describeInLaw(steps);
     }
 
     // Handle direct parent/child. steps[0] === "parent" means TO is FROM's
@@ -127,7 +163,8 @@ class FamilyTree {
       return `${ordinal(ups - 2)} great-niece/nephew`;
     }
 
-    // General cousin calculation
+    // General cousin calculation. Any "spouse" step already returned above,
+    // so every remaining step here is pure parent/child.
     // Find the common ancestor turn: sequence of "parent" then sequence of "child"
     let upCount = 0;
     let downCount = 0;
@@ -137,9 +174,6 @@ class FamilyTree {
       else if (steps[i] === "child") {
         pivot = i;
         break;
-      } else if (steps[i] === "spouse") {
-        // spouse in middle = in-law relationship
-        return describeInLaw(steps);
       }
     }
     if (pivot !== -1) {
