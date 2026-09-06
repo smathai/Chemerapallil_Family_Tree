@@ -3060,6 +3060,11 @@
         "given": "Chacko",
         "surn": "Mathai",
         "_type": "birth"
+      },
+      {
+        "given": "Ichayan",
+        "surn": "",
+        "_type": "nick"
       }
     ],
     "parents": [
