@@ -79,6 +79,16 @@ class FamilyTree {
       return `${bloodLabel}'s spouse`;
     }
 
+    // Symmetric case: FROM has no blood connection of their own either --
+    // they're just married to whoever the rest of the path actually starts
+    // from. By the usual "in-law" convention, FROM shares that person's own
+    // relationship to TO (extended by marriage), so reuse the same label
+    // rather than compounding a second "spouse of" on top of it.
+    if (steps.length > 1 && steps[0] === "spouse") {
+      const bloodFromId = path[0].id;
+      return this.describeRelationship(bloodFromId, toId);
+    }
+
     // Handle direct parent/child. steps[0] === "parent" means TO is FROM's
     // parent -- i.e. FROM is the child -- so the label describing FROM
     // (per the "FROM is the ___ of TO" phrasing) is "Child", not "Parent".

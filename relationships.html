@@ -136,7 +136,7 @@
 
   /* Tree SVG container */
   .tree-svg-wrap { overflow-x: auto; display: flex; justify-content: center; padding: 4px 0; }
-  .tree-svg-wrap svg { max-width: 100%; }
+  .tree-svg-wrap svg { flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -406,17 +406,44 @@ function renderTreeView(rawPath, fromId, toId) {
     return;
   }
 
-  const ids = [fromId, ...rawPath.map(s => s.id)];
-  const rels = rawPath.map(s => s.rel);
+  const fullIds = [fromId, ...rawPath.map(s => s.id)];
+  const fullRels = rawPath.map(s => s.rel);
 
-  // Find the pivot (common ancestor) index in ids[]
-  let pivotIdx = 0;
-  let lastParentIdx = -1;
-  for (let i = 0; i < rels.length; i++) {
-    if (rels[i] === "parent") lastParentIdx = i;
+  // Peel off a leading spouse hop (fromId is just married to the real blood
+  // start) and a trailing spouse hop (toId is just married to the real
+  // blood end) -- these render as a horizontal couple pair beside their
+  // blood-relative partner, at the same generation, instead of as another
+  // level of the tree.
+  let leadSpouse = null, ids = fullIds, rels = fullRels;
+  if (rels[0] === "spouse") {
+    leadSpouse = ids[0];
+    ids = ids.slice(1);
+    rels = rels.slice(1);
   }
-  if (lastParentIdx >= 0 && rels.indexOf("child") > lastParentIdx) {
-    pivotIdx = lastParentIdx + 1;
+  let trailSpouse = null;
+  if (rels.length && rels[rels.length - 1] === "spouse") {
+    trailSpouse = ids[ids.length - 1];
+    ids = ids.slice(0, -1);
+    rels = rels.slice(0, -1);
+  }
+
+  // Find the pivot (common ancestor) index in ids[]. A pure run of "parent"
+  // steps (no "child" at all) means TO is the ultimate ancestor; a pure run
+  // of "child" steps means FROM is. Only a mixed path (ups then downs, e.g.
+  // a cousin/aunt-uncle relation) has its pivot at the turning point.
+  const hasParent = rels.includes("parent");
+  const hasChild = rels.includes("child");
+  let pivotIdx = 0;
+  if (hasParent && !hasChild) {
+    pivotIdx = ids.length - 1;
+  } else if (hasParent && hasChild) {
+    let lastParentIdx = -1;
+    for (let i = 0; i < rels.length; i++) {
+      if (rels[i] === "parent") lastParentIdx = i;
+    }
+    if (rels.indexOf("child") > lastParentIdx) {
+      pivotIdx = lastParentIdx + 1;
+    }
   }
 
   // Split path into: upward chain (A → ancestor) and downward chain (ancestor → B)
@@ -482,8 +509,10 @@ function renderTreeView(rawPath, fromId, toId) {
   const hierarchy = d3.hierarchy(treeData);
   const maxDepth = Math.max(upBranch.length, downBranch.length);
 
-  const NW = 180, NH = 52, HGAP = 60, VGAP = 80;
-  const svgW = Math.max(500, (NW + HGAP) * 2 + 80);
+  const NW = 180, NH = 52, HGAP = 60, VGAP = 80, SGAP = 26;
+  const leadExtra = leadSpouse ? (NW + SGAP) : 0;
+  const trailExtra = trailSpouse ? (NW + SGAP) : 0;
+  const svgW = Math.max(500, (NW + HGAP) * 2 + 80 + leadExtra + trailExtra);
   const svgH = (NH + VGAP) * (maxDepth + 1) + 40;
 
   const svg = d3.create("svg")
@@ -524,6 +553,23 @@ function renderTreeView(rawPath, fromId, toId) {
     }
   }
 
+  // Attach the peeled-off spouses beside their blood-relative partner, at
+  // the exact same y -- same convention as tree.html's own couple rows,
+  // instead of stacking them as another generation below.
+  const marriageLines = [];
+  if (leadSpouse) {
+    const leafId = upBranch[upBranch.length - 1];
+    const leaf = positions[leafId];
+    positions[leadSpouse] = { x: leaf.x - (NW + SGAP), y: leaf.y };
+    marriageLines.push([leadSpouse, leafId]);
+  }
+  if (trailSpouse) {
+    const leafId = downBranch[downBranch.length - 1];
+    const leaf = positions[leafId];
+    positions[trailSpouse] = { x: leaf.x + (NW + SGAP), y: leaf.y };
+    marriageLines.push([leafId, trailSpouse]);
+  }
+
   // Draw links
   function drawLink(parentId, childId) {
     const p = positions[parentId], c = positions[childId];
@@ -538,6 +584,19 @@ function renderTreeView(rawPath, fromId, toId) {
 
   for (let i = 1; i < upBranch.length; i++) drawLink(upBranch[i - 1], upBranch[i]);
   for (let i = 1; i < downBranch.length; i++) drawLink(downBranch[i - 1], downBranch[i]);
+
+  // Draw marriage links: a short horizontal line between a couple at the
+  // same y, instead of the vertical parent/child curve.
+  function drawMarriageLine(leftId, rightId) {
+    const l = positions[leftId], r = positions[rightId];
+    if (!l || !r) return;
+    g.append("path")
+      .attr("d", `M${l.x + NW / 2},${l.y + NH / 2} L${r.x - NW / 2},${r.y + NH / 2}`)
+      .attr("fill", "none")
+      .attr("stroke", "var(--line)")
+      .attr("stroke-width", 1.8);
+  }
+  marriageLines.forEach(([a, b]) => drawMarriageLine(a, b));
 
   // Draw nodes
   function drawNode(id, isEndpoint, isPivot) {
@@ -589,11 +648,17 @@ function renderTreeView(rawPath, fromId, toId) {
     }
   }
 
-  // Draw all nodes
+  // Draw all nodes. A node only earns the "COMMON ANCESTOR" badge if it
+  // actually has a real multi-generation branch under it on at least one
+  // side -- otherwise (e.g. a bare spouse-to-spouse query with no blood
+  // link at all) there's no ancestor here to label.
+  const hasRealPivot = upBranch.length > 1 || downBranch.length > 1;
   const allIds = new Set([...upBranch, ...downBranch]);
+  if (leadSpouse) allIds.add(leadSpouse);
+  if (trailSpouse) allIds.add(trailSpouse);
   allIds.forEach(id => {
     const isEndpoint = id === fromId || id === toId;
-    const isPivot = id === ids[pivotIdx];
+    const isPivot = hasRealPivot && id === ids[pivotIdx];
     drawNode(id, isEndpoint, isPivot);
   });
 
