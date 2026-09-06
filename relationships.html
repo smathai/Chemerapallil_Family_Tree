@@ -135,8 +135,13 @@
   .view-btn:not(.active):hover { background: var(--card); color: var(--accent); }
 
   /* Tree SVG container */
-  .tree-svg-wrap { overflow-x: auto; display: flex; justify-content: center; padding: 4px 0; }
-  .tree-svg-wrap svg { flex-shrink: 0; }
+  /* margin:0 auto centers a narrower-than-container svg, and degrades
+     gracefully (auto margins just collapse to 0) when the svg is wider
+     than the container -- unlike flex justify-content:center, which pins
+     overflowing content at a *negative* scroll offset that can never
+     actually be scrolled into view. */
+  .tree-svg-wrap { overflow-x: auto; padding: 4px 0; }
+  .tree-svg-wrap svg { display: block; margin: 0 auto; }
 </style>
 </head>
 <body>
@@ -510,17 +515,35 @@ function renderTreeView(rawPath, fromId, toId) {
   const maxDepth = Math.max(upBranch.length, downBranch.length);
 
   const NW = 180, NH = 52, HGAP = 60, VGAP = 80, SGAP = 26;
-  const leadExtra = leadSpouse ? (NW + SGAP) : 0;
-  const trailExtra = trailSpouse ? (NW + SGAP) : 0;
-  const svgW = Math.max(500, (NW + HGAP) * 2 + 80 + leadExtra + trailExtra);
-  const svgH = (NH + VGAP) * (maxDepth + 1) + 40;
+
+  // Size each box to fit its own name/dates instead of truncating -- long
+  // names just make that one box wider, rather than getting cut off.
+  const measureCtx = document.createElement("canvas").getContext("2d");
+  function measureWidth(text, font) {
+    measureCtx.font = font;
+    return measureCtx.measureText(text).width;
+  }
+  const nodeWidths = {};
+  function nodeContent(id) {
+    const p = ft.byId[id];
+    const name = p?.display_name || "Unknown";
+    const yr = extractYear(p?.birth?.date);
+    const dyr = p?.death?.date ? extractYear(p.death.date) : (p?.death?.deceased ? "†" : "");
+    const dates = yr ? (dyr ? `${yr}–${dyr}` : yr) : "";
+    return { name, dates };
+  }
+  [...upBranch, ...downBranch, leadSpouse, trailSpouse].forEach(id => {
+    if (!id || nodeWidths[id]) return;
+    const { name, dates } = nodeContent(id);
+    const nameW = measureWidth(name, "600 13px 'Cormorant Garamond', serif");
+    const datesW = dates ? measureWidth(dates, "10px 'Jost', sans-serif") : 0;
+    nodeWidths[id] = Math.max(NW, Math.ceil(Math.max(nameW, datesW)) + 24);
+  });
 
   const svg = d3.create("svg")
-    .attr("width", svgW)
-    .attr("height", svgH)
     .style("font-family", "Jost, sans-serif");
 
-  const g = svg.append("g").attr("transform", `translate(${svgW / 2}, 30)`);
+  const g = svg.append("g");
 
   // Layout: root at top center, left branch goes down-left, right goes down-right
   // Assign x/y positions manually for clarity
@@ -560,15 +583,35 @@ function renderTreeView(rawPath, fromId, toId) {
   if (leadSpouse) {
     const leafId = upBranch[upBranch.length - 1];
     const leaf = positions[leafId];
-    positions[leadSpouse] = { x: leaf.x - (NW + SGAP), y: leaf.y };
+    positions[leadSpouse] = { x: leaf.x - (nodeWidths[leafId] / 2 + SGAP + nodeWidths[leadSpouse] / 2), y: leaf.y };
     marriageLines.push([leadSpouse, leafId]);
   }
   if (trailSpouse) {
     const leafId = downBranch[downBranch.length - 1];
     const leaf = positions[leafId];
-    positions[trailSpouse] = { x: leaf.x + (NW + SGAP), y: leaf.y };
+    positions[trailSpouse] = { x: leaf.x + (nodeWidths[leafId] / 2 + SGAP + nodeWidths[trailSpouse] / 2), y: leaf.y };
     marriageLines.push([leafId, trailSpouse]);
   }
+
+  // Now that every node has a final (x, y) center and known width, size the
+  // canvas to whatever the actual widest content turns out to be, and
+  // translate the group so it all fits -- rather than guessing a fixed
+  // width up front and clipping anything wider.
+  const allPositionedIds = [...upBranch, ...downBranch, leadSpouse, trailSpouse].filter(Boolean);
+  let minX = Infinity, maxX = -Infinity, maxY = 0;
+  allPositionedIds.forEach(id => {
+    const pos = positions[id];
+    if (!pos) return;
+    const hw = nodeWidths[id] / 2;
+    minX = Math.min(minX, pos.x - hw);
+    maxX = Math.max(maxX, pos.x + hw);
+    maxY = Math.max(maxY, pos.y + NH);
+  });
+  const PAD = 40;
+  const svgW = Math.max(500, (maxX - minX) + PAD * 2);
+  const svgH = maxY + PAD * 2;
+  svg.attr("width", svgW).attr("height", svgH);
+  g.attr("transform", `translate(${PAD - minX}, ${PAD})`);
 
   // Draw links
   function drawLink(parentId, childId) {
@@ -591,7 +634,7 @@ function renderTreeView(rawPath, fromId, toId) {
     const l = positions[leftId], r = positions[rightId];
     if (!l || !r) return;
     g.append("path")
-      .attr("d", `M${l.x + NW / 2},${l.y + NH / 2} L${r.x - NW / 2},${r.y + NH / 2}`)
+      .attr("d", `M${l.x + nodeWidths[leftId] / 2},${l.y + NH / 2} L${r.x - nodeWidths[rightId] / 2},${r.y + NH / 2}`)
       .attr("fill", "none")
       .attr("stroke", "var(--line)")
       .attr("stroke-width", 1.8);
@@ -603,20 +646,17 @@ function renderTreeView(rawPath, fromId, toId) {
     const pos = positions[id];
     if (!pos) return;
     const p = ft.byId[id];
-    const yr = extractYear(p?.birth?.date);
-    const dyr = p?.death?.date ? extractYear(p.death.date) : (p?.death?.deceased ? "†" : "");
-    const dates = yr ? (dyr ? `${yr}–${dyr}` : yr) : "";
-    const name = p?.display_name || "Unknown";
-    const nameShort = name.length > 20 ? name.slice(0, 19) + "…" : name;
+    const { name, dates } = nodeContent(id);
+    const width = nodeWidths[id];
     const sexColor = p?.sex === "F" ? "var(--female)" : p?.sex === "M" ? "var(--male)" : "var(--text)";
 
     const ng = g.append("g")
-      .attr("transform", `translate(${pos.x - NW / 2}, ${pos.y})`)
+      .attr("transform", `translate(${pos.x - width / 2}, ${pos.y})`)
       .style("cursor", "pointer")
       .on("click", () => window.open(`tree.html?id=${encodeURIComponent(id)}`, "_blank"));
 
     ng.append("rect")
-      .attr("width", NW).attr("height", NH).attr("rx", 6)
+      .attr("width", width).attr("height", NH).attr("rx", 6)
       .attr("fill", isPivot ? "#fff4e8" : isEndpoint ? "#fff8ef" : "var(--card)")
       .attr("stroke", isPivot ? "var(--accent2)" : isEndpoint ? "var(--accent)" : "var(--border)")
       .attr("stroke-width", isEndpoint || isPivot ? 2 : 1.5);
@@ -626,7 +666,7 @@ function renderTreeView(rawPath, fromId, toId) {
       .attr("font-family", "Cormorant Garamond, serif")
       .attr("font-size", 13).attr("font-weight", 600)
       .attr("fill", sexColor)
-      .text(nameShort);
+      .text(name);
 
     if (dates) {
       ng.append("text")
@@ -638,7 +678,7 @@ function renderTreeView(rawPath, fromId, toId) {
 
     if (isPivot) {
       ng.append("text")
-        .attr("x", NW / 2).attr("y", -6)
+        .attr("x", width / 2).attr("y", -6)
         .attr("text-anchor", "middle")
         .attr("font-family", "Jost, sans-serif")
         .attr("font-size", 9).attr("font-weight", 600)
