@@ -66,6 +66,19 @@ class FamilyTree {
       return "Spouse";
     }
 
+    // A path ending in "spouse" means the target has no blood connection
+    // of their own -- they're just married to whoever the rest of the path
+    // actually reaches (this is how anyone with no recorded parents shows
+    // up at all). Describe the blood relationship to that person instead,
+    // then note the marriage, rather than mislabeling the spouse with their
+    // partner's own blood relationship.
+    if (steps.length > 1 && steps[steps.length - 1] === "spouse") {
+      const bloodPath = path.slice(0, -1);
+      const bloodToId = bloodPath[bloodPath.length - 1].id;
+      const bloodLabel = this.describeRelationship(fromId, bloodToId);
+      return `${bloodLabel}'s spouse`;
+    }
+
     // Handle direct parent/child
     if (steps.length === 1 && steps[0] === "parent") return "Parent";
     if (steps.length === 1 && steps[0] === "child") return "Child";
