@@ -176,7 +176,12 @@ function computeAge(p) {
     return dy ? { value: dy - by, atDeath: true } : null;
   }
   if (p.death?.deceased) return null; // deceased but no date to compute from
-  return { value: new Date().getFullYear() - by, atDeath: false };
+  const value = new Date().getFullYear() - by;
+  // No recorded death, but the birth year alone puts them over 100 today --
+  // almost certainly deceased without a recorded date, so treat the "still
+  // alive" math as meaningless rather than showing an implausible age.
+  if (value > 100) return { unknown: true };
+  return { value, atDeath: false };
 }
 
 function buildInfoPanelHtml(p) {
@@ -204,7 +209,7 @@ function buildInfoPanelHtml(p) {
   const deathHtml = deathParts.length ? deathParts.join(' · ') : (p.death?.deceased ? 'Deceased (no date)' : empty);
 
   const age = computeAge(p);
-  const ageHtml = age ? `${age.value}${age.atDeath ? ' (at death)' : ''}` : empty;
+  const ageHtml = age ? (age.unknown ? 'Unknown' : `${age.value}${age.atDeath ? ' (at death)' : ''}`) : empty;
 
   return `
     <div class="info-panel">
