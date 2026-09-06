@@ -79,20 +79,22 @@ class FamilyTree {
       return `${bloodLabel}'s spouse`;
     }
 
-    // Handle direct parent/child
-    if (steps.length === 1 && steps[0] === "parent") return "Parent";
-    if (steps.length === 1 && steps[0] === "child") return "Child";
+    // Handle direct parent/child. steps[0] === "parent" means TO is FROM's
+    // parent -- i.e. FROM is the child -- so the label describing FROM
+    // (per the "FROM is the ___ of TO" phrasing) is "Child", not "Parent".
+    if (steps.length === 1 && steps[0] === "parent") return "Child";
+    if (steps.length === 1 && steps[0] === "child") return "Parent";
 
-    // Handle grandparent/grandchild chains
+    // Handle grandparent/grandchild chains (same FROM-relative-to-TO logic)
     if (steps.every(s => s === "parent")) {
-      const n = steps.length;
-      if (n === 2) return "Grandparent";
-      return `${ordinal(n - 1)} great-grandparent`;
-    }
-    if (steps.every(s => s === "child")) {
       const n = steps.length;
       if (n === 2) return "Grandchild";
       return `${ordinal(n - 1)} great-grandchild`;
+    }
+    if (steps.every(s => s === "child")) {
+      const n = steps.length;
+      if (n === 2) return "Grandparent";
+      return `${ordinal(n - 1)} great-grandparent`;
     }
 
     // Handle sibling: up 1, down 1
@@ -100,18 +102,22 @@ class FamilyTree {
       return "Sibling";
     }
 
-    // Handle aunt/uncle and niece/nephew
+    // Handle aunt/uncle and niece/nephew. First branch: FROM's parent is
+    // TO's ancestor via "child" steps only -- TO is FROM's sibling's
+    // descendant, so FROM is the elder one here: FROM is TO's Aunt/Uncle.
     if (steps[0] === "parent" && steps.slice(1).every(s => s === "child")) {
       const downs = steps.length - 1;
       if (downs === 1) return "Sibling";
-      if (downs === 2) return "Niece/Nephew";
-      return `${ordinal(downs - 2)} great-niece/nephew`;
+      if (downs === 2) return "Aunt/Uncle";
+      return `${ordinal(downs - 2)} great-aunt/uncle`;
     }
+    // Second branch: FROM climbs only "parent" steps to reach TO's child --
+    // FROM is descended from TO's sibling, so FROM is TO's Niece/Nephew.
     if (steps[steps.length - 1] === "child" && steps.slice(0, -1).every(s => s === "parent")) {
       const ups = steps.length - 1;
       if (ups === 1) return "Sibling";
-      if (ups === 2) return "Aunt/Uncle";
-      return `${ordinal(ups - 2)} great-aunt/uncle`;
+      if (ups === 2) return "Niece/Nephew";
+      return `${ordinal(ups - 2)} great-niece/nephew`;
     }
 
     // General cousin calculation
@@ -137,7 +143,7 @@ class FamilyTree {
       const degree = Math.min(upCount, downCount);
       const removed = Math.abs(upCount - downCount);
       if (degree === 1 && removed === 0) return "Sibling";
-      if (degree === 1 && removed === 1) return upCount > downCount ? "Aunt/Uncle" : "Niece/Nephew";
+      if (degree === 1 && removed === 1) return upCount > downCount ? "Niece/Nephew" : "Aunt/Uncle";
       const removedStr = removed > 0 ? `, ${removed}x removed` : "";
       return `${ordinal(degree - 1)} cousin${removedStr}`;
     }
